@@ -246,6 +246,66 @@
 
     @media (max-width: 600px) { .side-panel { display: none; } .board-area { padding: 0.75rem; } }
 
+    /* ── Dev panel ── */
+    .dev-fab {
+      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 400;
+      width: 44px; height: 44px; border-radius: 50%;
+      background: #333; border: 1px solid rgba(255,255,255,0.2);
+      color: #fff; font-size: 1.1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+      transition: background 0.2s;
+    }
+    .dev-fab:hover { background: #444; }
+
+    .dev-panel {
+      position: fixed; bottom: 5.5rem; right: 1.5rem; z-index: 400;
+      background: var(--dark-2); border: 1px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius); padding: 1rem;
+      width: 240px; box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      display: none; flex-direction: column; gap: 0.75rem;
+      animation: slideUp 0.2s cubic-bezier(0.16,1,0.3,1);
+    }
+    .dev-panel.open { display: flex; }
+    .dev-panel-title {
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+      font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--grey); display: flex; justify-content: space-between; align-items: center;
+    }
+    .dev-panel-title span { color: #f59e0b; }
+    .dev-row { display: flex; gap: 0.5rem; }
+    .dev-input {
+      flex: 1; background: var(--dark-3); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-sm); color: #fff; font-family: 'Barlow', sans-serif;
+      font-size: 0.85rem; padding: 0.45rem 0.7rem; outline: none;
+    }
+    .dev-input:focus { border-color: #f59e0b; }
+    .dev-input::placeholder { color: #555; }
+    .dev-btn {
+      background: #f59e0b; color: #000; border: none; border-radius: var(--radius-sm);
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.85rem;
+      letter-spacing: 0.05em; text-transform: uppercase; padding: 0.45rem 0.75rem;
+      cursor: pointer; white-space: nowrap;
+    }
+    .dev-btn:hover { background: #d97706; }
+    .dev-btn-ghost {
+      background: transparent; color: #f59e0b; border: 1px solid rgba(245,158,11,0.3);
+      border-radius: var(--radius-sm); font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 0.4rem 0.75rem; cursor: pointer; width: 100%;
+    }
+    .dev-btn-ghost:hover { background: rgba(245,158,11,0.08); }
+    .dev-test-players { display: flex; flex-direction: column; gap: 0.3rem; max-height: 140px; overflow-y: auto; }
+    .dev-player-row {
+      display: flex; align-items: center; gap: 0.5rem;
+      background: var(--dark-3); border-radius: var(--radius-sm); padding: 0.3rem 0.5rem;
+      font-size: 0.78rem;
+    }
+    .dev-player-name { flex: 1; font-weight: 600; }
+    .dev-player-space { color: #f59e0b; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; }
+    .dev-player-remove { background: none; border: none; color: var(--grey); cursor: pointer; font-size: 0.9rem; padding: 0; }
+    .dev-player-remove:hover { color: var(--red); }
+
     /* ── Space tooltip (hover popup) ── */
     .space-tooltip {
       position: fixed;
@@ -426,6 +486,22 @@
   </div>
 </div>
 
+<!-- ══ DEV PANEL ══ -->
+<div id="dev-panel" class="dev-panel">
+  <div class="dev-panel-title">
+    <span>🧪 Test Players</span>
+    <span style="color:var(--grey);font-size:0.7rem;font-weight:400;">not saved</span>
+  </div>
+  <div class="dev-row">
+    <input class="dev-input" id="dev-name" placeholder="Name" />
+    <input class="dev-input" id="dev-space" placeholder="Space" type="number" min="1" max="40" style="width:60px;flex:none;" />
+  </div>
+  <button class="dev-btn" onclick="addTestPlayer()">+ Add Player</button>
+  <div class="dev-test-players" id="dev-players-list"></div>
+  <button class="dev-btn-ghost" onclick="clearTestPlayers()">Clear All Test Players</button>
+</div>
+<button class="dev-fab" id="dev-fab" onclick="toggleDevPanel()" title="Test players">🧪</button>
+
 <!-- ══ CELEBRATION ══ -->
 <div id="celebration" style="display:none;">
   <div class="celebration-overlay">
@@ -471,6 +547,10 @@
   function showPage(n) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
     document.getElementById('page-' + n).classList.add('active')
+    const fab = document.getElementById('dev-fab')
+    const panel = document.getElementById('dev-panel')
+    if (fab) fab.style.display = n === 'game' ? 'flex' : 'none'
+    if (panel && n !== 'game') panel.classList.remove('open')
   }
   function hideLoader() { document.getElementById('page-loader').style.display = 'none' }
   function setAlert(id, msg, type = 'error') {
@@ -985,6 +1065,89 @@
     setLoading('avatar-save-btn', false, 'Save Avatar')
     closeModal('avatar-modal')
   }
+
+  // ════════════════════════════════
+  //  DEV TEST PLAYERS
+  // ════════════════════════════════
+  const TEST_NAMES = ['Alex','Jordan','Sam','Riley','Taylor','Morgan','Casey','Avery','Quinn','Blake']
+  let testPlayers = []
+
+  function toggleDevPanel() {
+    const panel = document.getElementById('dev-panel')
+    panel.classList.toggle('open')
+  }
+
+  function addTestPlayer() {
+    const nameInput  = document.getElementById('dev-name')
+    const spaceInput = document.getElementById('dev-space')
+    const name  = nameInput.value.trim() || TEST_NAMES[Math.floor(Math.random() * TEST_NAMES.length)]
+    const space = Math.min(40, Math.max(1, parseInt(spaceInput.value) || Math.ceil(Math.random() * 40)))
+
+    const fake = {
+      id: 'test-' + Date.now() + Math.random(),
+      display_name: name,
+      current_space: space,
+      laps_completed: 0,
+      skip_tickets: 0,
+      banked_tasks: [],
+      avatar: null,
+      role: 'staff',
+      _isTest: true
+    }
+
+    testPlayers.push(fake)
+    allPlayers.push(fake)
+    nameInput.value  = ''
+    spaceInput.value = ''
+    renderDevPlayersList()
+    renderBoard()
+    renderSidePanel()
+  }
+
+  function removeTestPlayer(id) {
+    testPlayers   = testPlayers.filter(p => p.id !== id)
+    allPlayers    = allPlayers.filter(p => p.id !== id)
+    renderDevPlayersList()
+    renderBoard()
+    renderSidePanel()
+  }
+
+  function clearTestPlayers() {
+    testPlayers = []
+    allPlayers  = allPlayers.filter(p => !p._isTest)
+    renderDevPlayersList()
+    renderBoard()
+    renderSidePanel()
+  }
+
+  function renderDevPlayersList() {
+    const list = document.getElementById('dev-players-list')
+    list.innerHTML = ''
+    if (testPlayers.length === 0) {
+      list.innerHTML = '<div style="font-size:0.75rem;color:var(--grey);text-align:center;padding:0.4rem;">No test players yet</div>'
+      return
+    }
+    testPlayers.forEach(p => {
+      const row = document.createElement('div')
+      row.className = 'dev-player-row'
+      row.innerHTML = `
+        <div class="dev-player-name">${p.display_name}</div>
+        <div class="dev-player-space">Space ${p.current_space}</div>
+        <button class="dev-player-remove" onclick="removeTestPlayer('${p.id}')">✕</button>
+      `
+      list.appendChild(row)
+    })
+  }
+
+  // Allow pressing Enter in dev inputs
+  document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('dev-space')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') addTestPlayer()
+    })
+    document.getElementById('dev-name')?.addEventListener('keydown', e => {
+      if (e.key === 'Enter') addTestPlayer()
+    })
+  })
 
   // ════════════════════════════════
   //  CELEBRATION
