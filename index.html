@@ -343,10 +343,10 @@
           <img id="avatar-preview" class="avatar-preview" src="" alt="Preview" />
         </div>
         <div class="upload-zone" id="upload-zone">
-          <input type="file" id="avatar-file-input" accept="image/*" onchange="handleAvatarFile(event)" />
+          <input type="file" id="avatar-file-input" accept="image/jpeg,image/png,image/gif,image/webp" onchange="handleAvatarFile(event)" />
           <div class="upload-zone-icon">📷</div>
           <p>Tap to choose a photo</p>
-          <small>JPG, PNG or GIF · max 2MB</small>
+          <small>JPG, PNG, GIF or WebP · max 2MB</small>
         </div>
         <div id="avatar-upload-alert"></div>
         <button class="btn btn-red btn-full" id="avatar-save-btn" onclick="saveAvatar()" disabled>Save Avatar</button>
@@ -768,27 +768,43 @@
     setLoading('avatar-save-btn', true, 'Save Avatar')
     setAlert('avatar-upload-alert','')
 
-    // Upload to Supabase Storage — file name = user's UUID
-    const ext      = avatarFileBlob.name.split('.').pop()
-    const filePath = `${currentUser.id}`
+    // Determine extension from mime type (handles webp, jpg, png, gif)
+    const mimeToExt = {
+      'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png',
+      'image/gif': 'gif', 'image/webp': 'webp'
+    }
+    const ext      = mimeToExt[avatarFileBlob.type] || 'jpg'
+    const filePath = `${currentUser.id}.${ext}`
 
-    const { error: upErr } = await sb.storage
+    // Remove any existing avatar file first (different extension may exist)
+    await sb.storage.from('avatars').remove([
+      `${currentUser.id}.jpg`, `${currentUser.id}.jpeg`,
+      `${currentUser.id}.png`, `${currentUser.id}.gif`,
+      `${currentUser.id}.webp`
+    ])
+
+    const { data: upData, error: upErr } = await sb.storage
       .from('avatars')
       .upload(filePath, avatarFileBlob, { upsert: true, contentType: avatarFileBlob.type })
 
     if (upErr) {
-      setAlert('avatar-upload-alert', upErr.message)
+      console.error('Upload error:', upErr)
+      setAlert('avatar-upload-alert', `Upload failed: ${upErr.message}`)
       setLoading('avatar-save-btn', false, 'Save Avatar')
       return
     }
 
-    // Get public URL
+    // Get public URL with cache-bust
     const { data: urlData } = sb.storage.from('avatars').getPublicUrl(filePath)
-    const publicUrl = urlData.publicUrl + '?t=' + Date.now() // cache-bust
+    const publicUrl = urlData.publicUrl + '?t=' + Date.now()
 
     // Save URL to profile
     const { error: dbErr } = await sb.from('profiles').update({ avatar: publicUrl }).eq('id', currentUser.id)
-    if (dbErr) { setAlert('avatar-upload-alert', dbErr.message); setLoading('avatar-save-btn',false,'Save Avatar'); return }
+    if (dbErr) {
+      setAlert('avatar-upload-alert', `Save failed: ${dbErr.message}`)
+      setLoading('avatar-save-btn', false, 'Save Avatar')
+      return
+    }
 
     currentProfile.avatar = publicUrl
     const idx = allPlayers.findIndex(p => p.id === currentUser.id)
