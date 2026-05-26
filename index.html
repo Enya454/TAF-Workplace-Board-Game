@@ -415,7 +415,13 @@
   // ════════════════════════════════
   //  AUTH
   // ════════════════════════════════
-  sb.auth.onAuthStateChange(async (_event, session) => {
+  // Use getSession on load, then onAuthStateChange only for sign-in/sign-out events
+  async function bootApp() {
+    const { data: { session } } = await sb.auth.getSession()
+    await handleSession(session)
+  }
+
+  async function handleSession(session) {
     if (!session) { hideLoader(); showPage('login'); return }
     currentUser = session.user
     const { data: profile } = await sb.from('profiles').select('*').eq('id', session.user.id).single()
@@ -428,7 +434,15 @@
     } else {
       await initGame()
     }
+  }
+
+  // Only react to actual sign-in / sign-out changes after initial boot
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN')  { await handleSession(session) }
+    if (event === 'SIGNED_OUT') { hideLoader(); showPage('login') }
   })
+
+  bootApp()
 
   async function handleLogin() {
     setAlert('login-alert', '')
