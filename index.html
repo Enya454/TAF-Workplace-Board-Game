@@ -415,11 +415,7 @@
   // ════════════════════════════════
   //  AUTH
   // ════════════════════════════════
-  // Use getSession on load, then onAuthStateChange only for sign-in/sign-out events
-  async function bootApp() {
-    const { data: { session } } = await sb.auth.getSession()
-    await handleSession(session)
-  }
+  let appBooted = false
 
   async function handleSession(session) {
     if (!session) { hideLoader(); showPage('login'); return }
@@ -436,13 +432,20 @@
     }
   }
 
-  // Only react to actual sign-in / sign-out changes after initial boot
+  // onAuthStateChange fires on every page load with INITIAL_SESSION when already logged in,
+  // and with SIGNED_IN after a fresh login — covers both cases reliably
   sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'SIGNED_IN')  { await handleSession(session) }
-    if (event === 'SIGNED_OUT') { hideLoader(); showPage('login') }
+    if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
+      if (appBooted) return   // prevent double-firing on fresh login
+      appBooted = true
+      await handleSession(session)
+    }
+    if (event === 'SIGNED_OUT') {
+      appBooted = false
+      currentUser = null; currentProfile = null; boardSpaces = []; allPlayers = []
+      hideLoader(); showPage('login')
+    }
   })
-
-  bootApp()
 
   async function handleLogin() {
     setAlert('login-alert', '')
