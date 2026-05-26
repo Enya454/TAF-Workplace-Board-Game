@@ -245,6 +245,38 @@
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
 
     @media (max-width: 600px) { .side-panel { display: none; } .board-area { padding: 0.75rem; } }
+
+    /* ── Space tooltip (hover popup) ── */
+    .space-tooltip {
+      position: fixed;
+      background: var(--dark-2);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: var(--radius-sm);
+      padding: 0.6rem 0.8rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+      z-index: 500;
+      pointer-events: none;
+      min-width: 130px;
+      animation: fadeIn 0.1s ease;
+    }
+    .tooltip-title {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 800; font-size: 0.75rem;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--grey); margin-bottom: 0.4rem;
+    }
+    .tooltip-player {
+      display: flex; align-items: center; gap: 0.5rem;
+      padding: 0.2rem 0;
+      font-size: 0.82rem; font-weight: 600;
+    }
+    .tooltip-av {
+      width: 20px; height: 20px; border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.55rem; font-weight: 700; flex-shrink: 0;
+      overflow: hidden; border: 1.5px solid rgba(255,255,255,0.15);
+    }
+    .tooltip-av img { width: 100%; height: 100%; object-fit: cover; }
   </style>
 </head>
 <body>
@@ -611,134 +643,208 @@
   }
 
   // ════════════════════════════════
+  //  TOOLTIP
+  // ════════════════════════════════
+  let tooltipEl = null
+
+  function showTooltip(players, x, y) {
+    hideTooltip()
+    tooltipEl = document.createElement('div')
+    tooltipEl.className = 'space-tooltip'
+
+    const title = document.createElement('div')
+    title.className = 'tooltip-title'
+    title.textContent = `${players.length} player${players.length > 1 ? 's' : ''} here`
+    tooltipEl.appendChild(title)
+
+    players.forEach(p => {
+      const row = document.createElement('div')
+      row.className = 'tooltip-player'
+      const av = document.createElement('div')
+      av.className = 'tooltip-av'
+      const url = getAvatarUrl(p)
+      if (url) {
+        const img = document.createElement('img')
+        img.src = url; av.appendChild(img)
+        av.style.background = 'var(--dark-3)'
+      } else {
+        av.textContent = initials(p.display_name)
+        av.style.background = stringToColour(p.id || p.display_name)
+      }
+      row.appendChild(av)
+      const name = document.createElement('span')
+      name.textContent = p.display_name + (p.id === currentProfile.id ? ' (you)' : '')
+      if (p.id === currentProfile.id) name.style.color = 'var(--red)'
+      row.appendChild(name)
+      tooltipEl.appendChild(row)
+    })
+
+    document.body.appendChild(tooltipEl)
+
+    // Position — keep inside viewport
+    const tw = tooltipEl.offsetWidth
+    const th = tooltipEl.offsetHeight
+    let tx = x + 12
+    let ty = y - th / 2
+    if (tx + tw > window.innerWidth - 10) tx = x - tw - 12
+    if (ty < 8) ty = 8
+    if (ty + th > window.innerHeight - 8) ty = window.innerHeight - th - 8
+    tooltipEl.style.left = tx + 'px'
+    tooltipEl.style.top  = ty + 'px'
+  }
+
+  function hideTooltip() {
+    if (tooltipEl) { tooltipEl.remove(); tooltipEl = null }
+  }
+
+  // ════════════════════════════════
   //  SINE-WAVE BOARD (SVG)
   // ════════════════════════════════
   function renderBoard() {
-    const svg    = document.getElementById('board-svg')
-    const total  = boardSpaces.length
-    const R      = 28          // circle radius
-    const PAD    = 44          // padding around board
-    const WIDTH  = 720         // SVG logical width
-    const COLS   = 8           // spaces per wave cycle (half period)
-    const AMP    = 70          // sine wave amplitude
-    const BASELINE = 160       // vertical centre of wave
+    const svg   = document.getElementById('board-svg')
+    const total = boardSpaces.length
+    const R     = 28    // space circle radius
+    const AV    = 10    // mini avatar radius inside space
+    const MAX_VISIBLE = 3   // max avatars shown before collapsing
+    const PAD   = 44
+    const WIDTH = 720
+    const COLS  = 8
+    const AMP   = 70
 
-    // How many rows of sine humps do we need?
     const spacingX = (WIDTH - PAD * 2) / (COLS - 1)
-
-    // Calculate positions: sine wave that snakes down the page
-    // Each row of COLS spaces occupies one half-sine (hump up or hump down)
-    // After every 2*COLS spaces the wave has done a full period → shift down
     const positions = []
-    const rowHeight = AMP * 2 + R * 2 + 30  // vertical distance between rows of humps
+    const rowHeight = AMP * 2 + R * 2 + 30
 
     for (let i = 0; i < total; i++) {
-      const row   = Math.floor(i / COLS)
-      const col   = i % COLS
+      const row    = Math.floor(i / COLS)
+      const col    = i % COLS
       const goRight = row % 2 === 0
       const colIdx  = goRight ? col : (COLS - 1 - col)
       const x       = PAD + colIdx * spacingX
-      // Sine offset within the row (0 to PI across COLS points)
-      const t       = col / (COLS - 1)       // 0..1
-      const sineY   = Math.sin(t * Math.PI)  // 0..1..0  (hump up)
+      const t       = col / (COLS - 1)
+      const sineY   = Math.sin(t * Math.PI)
       const baseY   = PAD + row * rowHeight + AMP
-      const y       = baseY - sineY * AMP    // hump upward
+      const y       = baseY - sineY * AMP
       positions.push({ x, y })
     }
 
     const svgH = PAD + Math.ceil(total / COLS) * rowHeight + PAD
-
     svg.setAttribute('viewBox', `0 0 ${WIDTH} ${svgH}`)
     svg.innerHTML = ''
 
-    // ── defs for clip paths ──
     const defs = document.createElementNS('http://www.w3.org/2000/svg','defs')
 
-    // ── Draw connector path ──
+    // Connector path
     let pathD = ''
-    positions.forEach((p, i) => {
-      pathD += i === 0 ? `M ${p.x} ${p.y}` : ` L ${p.x} ${p.y}`
-    })
+    positions.forEach((p, i) => { pathD += i === 0 ? `M ${p.x} ${p.y}` : ` L ${p.x} ${p.y}` })
     const pathEl = document.createElementNS('http://www.w3.org/2000/svg','path')
     pathEl.setAttribute('d', pathD)
     pathEl.setAttribute('class','board-path')
     svg.appendChild(pathEl)
 
-    // ── Draw spaces ──
+    // Spaces
     boardSpaces.forEach((space, i) => {
-      const { x, y }  = positions[i]
-      const colour     = space.colour
-      const mySpace    = currentProfile.current_space || 1
-      const isMine     = space.position === mySpace
-      const players    = allPlayers.filter(p => (p.current_space || 1) === space.position)
-      const fillClass  = `space-${colour}-fill${isMine ? ' mine' : ''}`
+      const { x, y } = positions[i]
+      const colour    = space.colour
+      const mySpace   = currentProfile.current_space || 1
+      const isMine    = space.position === mySpace
+      const players   = allPlayers.filter(p => (p.current_space || 1) === space.position)
+      const fillClass = `space-${colour}-fill${isMine ? ' mine' : ''}`
 
-      // Clip path for avatar images
-      const clipId = `clip-${space.position}`
-      const clip   = document.createElementNS('http://www.w3.org/2000/svg','clipPath')
-      clip.setAttribute('id', clipId)
-      const clipCirc = document.createElementNS('http://www.w3.org/2000/svg','circle')
-      clipCirc.setAttribute('cx', x); clipCirc.setAttribute('cy', y); clipCirc.setAttribute('r', R - 2)
-      clip.appendChild(clipCirc)
-      defs.appendChild(clip)
-
-      // Group
       const g = document.createElementNS('http://www.w3.org/2000/svg','g')
       g.setAttribute('class','space-circle')
+      g.style.cursor = players.length > 0 ? 'pointer' : 'default'
 
-      // Circle background
+      // Main circle
       const circ = document.createElementNS('http://www.w3.org/2000/svg','circle')
       circ.setAttribute('cx', x); circ.setAttribute('cy', y); circ.setAttribute('r', R)
       circ.setAttribute('class', fillClass)
       g.appendChild(circ)
 
-      if (players.length > 0) {
-        // Show first player's avatar (image or initials) inside the circle
-        const p0    = players[0]
-        const avUrl = getAvatarUrl(p0)
-        if (avUrl) {
-          const img = document.createElementNS('http://www.w3.org/2000/svg','image')
-          img.setAttribute('href', avUrl)
-          img.setAttribute('x', x - R + 2); img.setAttribute('y', y - R + 2)
-          img.setAttribute('width', (R-2)*2); img.setAttribute('height', (R-2)*2)
-          img.setAttribute('clip-path', `url(#${clipId})`)
-          img.setAttribute('preserveAspectRatio','xMidYMid slice')
-          g.appendChild(img)
-        } else {
-          // Initials text
-          const initBg = document.createElementNS('http://www.w3.org/2000/svg','circle')
-          initBg.setAttribute('cx', x); initBg.setAttribute('cy', y); initBg.setAttribute('r', R - 2)
-          initBg.setAttribute('fill', stringToColour(p0.id || p0.display_name))
-          g.appendChild(initBg)
-
-          const txt = document.createElementNS('http://www.w3.org/2000/svg','text')
-          txt.setAttribute('x', x); txt.setAttribute('y', y)
-          txt.setAttribute('class','space-label')
-          txt.setAttribute('font-size','12'); txt.setAttribute('fill','#fff')
-          txt.textContent = initials(p0.display_name)
-          g.appendChild(txt)
-        }
-
-        // +N badge if more than 1 player
-        if (players.length > 1) {
-          const badge = document.createElementNS('http://www.w3.org/2000/svg','circle')
-          badge.setAttribute('cx', x + R - 8); badge.setAttribute('cy', y - R + 8)
-          badge.setAttribute('r','10'); badge.setAttribute('fill','var(--red)')
-          g.appendChild(badge)
-          const bTxt = document.createElementNS('http://www.w3.org/2000/svg','text')
-          bTxt.setAttribute('x', x + R - 8); bTxt.setAttribute('y', y - R + 8)
-          bTxt.setAttribute('class','space-label'); bTxt.setAttribute('fill','#fff')
-          bTxt.setAttribute('font-size','9')
-          bTxt.textContent = `+${players.length - 1}`
-          g.appendChild(bTxt)
-        }
-      } else {
-        // Just show space number
+      if (players.length === 0) {
+        // Space number label
         const lbl = document.createElementNS('http://www.w3.org/2000/svg','text')
         lbl.setAttribute('x', x); lbl.setAttribute('y', y)
         lbl.setAttribute('class','space-label')
         lbl.textContent = space.position
         g.appendChild(lbl)
+      } else {
+        // Show up to MAX_VISIBLE mini avatars, arranged in a small cluster
+        const visible  = players.slice(0, MAX_VISIBLE)
+        const overflow = players.length - MAX_VISIBLE
+        const count    = visible.length + (overflow > 0 ? 1 : 0) // +1 for overflow bubble
+
+        // Layout: row of mini circles centred in the space
+        const totalW   = count * AV * 2 + (count - 1) * 2
+        const startX   = x - totalW / 2 + AV
+
+        visible.forEach((p, idx) => {
+          const ax = startX + idx * (AV * 2 + 2)
+          const ay = y
+          const clipId = `clip-${space.position}-${idx}`
+
+          // Clip path
+          const clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath')
+          clip.setAttribute('id', clipId)
+          const cc = document.createElementNS('http://www.w3.org/2000/svg','circle')
+          cc.setAttribute('cx', ax); cc.setAttribute('cy', ay); cc.setAttribute('r', AV)
+          clip.appendChild(cc); defs.appendChild(clip)
+
+          const url = getAvatarUrl(p)
+          if (url) {
+            // White border ring
+            const ring = document.createElementNS('http://www.w3.org/2000/svg','circle')
+            ring.setAttribute('cx', ax); ring.setAttribute('cy', ay); ring.setAttribute('r', AV + 1.5)
+            ring.setAttribute('fill', 'rgba(255,255,255,0.15)')
+            g.appendChild(ring)
+            const img = document.createElementNS('http://www.w3.org/2000/svg','image')
+            img.setAttribute('href', url)
+            img.setAttribute('x', ax - AV); img.setAttribute('y', ay - AV)
+            img.setAttribute('width', AV * 2); img.setAttribute('height', AV * 2)
+            img.setAttribute('clip-path', `url(#${clipId})`)
+            img.setAttribute('preserveAspectRatio','xMidYMid slice')
+            g.appendChild(img)
+          } else {
+            const bg = document.createElementNS('http://www.w3.org/2000/svg','circle')
+            bg.setAttribute('cx', ax); bg.setAttribute('cy', ay); bg.setAttribute('r', AV)
+            bg.setAttribute('fill', stringToColour(p.id || p.display_name))
+            g.appendChild(bg)
+            const txt = document.createElementNS('http://www.w3.org/2000/svg','text')
+            txt.setAttribute('x', ax); txt.setAttribute('y', ay)
+            txt.setAttribute('class','space-label'); txt.setAttribute('fill','#fff')
+            txt.setAttribute('font-size','8')
+            txt.textContent = initials(p.display_name)
+            g.appendChild(txt)
+          }
+        })
+
+        // Overflow bubble: "+N"
+        if (overflow > 0) {
+          const ax = startX + visible.length * (AV * 2 + 2)
+          const bg = document.createElementNS('http://www.w3.org/2000/svg','circle')
+          bg.setAttribute('cx', ax); bg.setAttribute('cy', y); bg.setAttribute('r', AV)
+          bg.setAttribute('fill','var(--red)')
+          g.appendChild(bg)
+          const txt = document.createElementNS('http://www.w3.org/2000/svg','text')
+          txt.setAttribute('x', ax); txt.setAttribute('y', y)
+          txt.setAttribute('class','space-label'); txt.setAttribute('fill','#fff')
+          txt.setAttribute('font-size','8')
+          txt.textContent = `+${overflow}`
+          g.appendChild(txt)
+        }
+
+        // Hover tooltip — shows all players
+        g.addEventListener('mouseenter', e => showTooltip(players, e.clientX, e.clientY))
+        g.addEventListener('mousemove',  e => {
+          if (tooltipEl) {
+            const tw = tooltipEl.offsetWidth
+            let tx = e.clientX + 12
+            if (tx + tw > window.innerWidth - 10) tx = e.clientX - tw - 12
+            tooltipEl.style.left = tx + 'px'
+            tooltipEl.style.top  = (e.clientY - tooltipEl.offsetHeight / 2) + 'px'
+          }
+        })
+        g.addEventListener('mouseleave', hideTooltip)
       }
 
       svg.appendChild(g)
@@ -749,7 +855,7 @@
     // Scroll to my space
     setTimeout(() => {
       const mySpace = currentProfile.current_space || 1
-      const myPos = positions[mySpace - 1]
+      const myPos   = positions[mySpace - 1]
       if (myPos) {
         const wrap = document.querySelector('.board-area')
         const ratio = myPos.y / svgH
