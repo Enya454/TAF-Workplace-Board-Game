@@ -1328,15 +1328,10 @@
       currentTasks.forEach(task => {
         const card = document.createElement('div')
         card.className = `task-card${isDone ? ' done-card' : ''}`
-
-        // Colour pips for multi-colour tasks
         const pips = task.colours.map(c => `<div class="task-colour-pip ${c}"></div>`).join('')
-
         card.innerHTML = `
-          <div class="task-btns">
-            <div style="display:flex;gap:3px;margin-bottom:0.3rem;">${pips}</div>
-          </div>
           <div class="task-card-info">
+            <div style="display:flex;gap:3px;margin-bottom:0.3rem;">${pips}</div>
             <div class="task-card-title">${task.title}</div>
             ${task.description ? `<div class="task-card-desc">${task.description}</div>` : ''}
           </div>
@@ -1346,34 +1341,74 @@
               ${isDone ? 'disabled' : ''}>
               ✓ Complete
             </button>
-            ${colour === 'red' ? `
-            <button class="task-btn task-btn-bank"
-              onclick="openBankModal()"
-              ${banked.length >= 3 ? 'disabled' : ''}>
-              ★ Bank Easier
-            </button>` : ''}
           </div>
         `
         body.appendChild(card)
       })
     }
 
-    // Banked tasks (always show if any)
+    // Banked tasks — only show ones redeemable on this colour
+    // A banked task is redeemable if its colours array includes the current space colour
+    const redeemable = banked.filter((bt, idx) => {
+      const btColours = Array.isArray(bt.colours) ? bt.colours : [bt.colour || 'green']
+      return btColours.includes(colour)
+    })
+    const nonRedeemable = banked.filter((bt) => {
+      const btColours = Array.isArray(bt.colours) ? bt.colours : [bt.colour || 'green']
+      return !btColours.includes(colour)
+    })
+
     if (banked.length > 0) {
       const sec = document.createElement('div')
       sec.className = 'banked-section'
       sec.innerHTML = `<div class="banked-title">⭐ Banked Tasks (${banked.length}/3)</div>`
-      banked.forEach((bt, idx) => {
+
+      // Redeemable ones first
+      redeemable.forEach((bt) => {
+        const realIdx = banked.indexOf(bt)
+        const btColours = Array.isArray(bt.colours) ? bt.colours : [bt.colour || 'green']
+        const pips = btColours.map(c => `<div class="task-colour-pip ${c}"></div>`).join('')
         const bc = document.createElement('div')
         bc.className = 'banked-card'
         bc.innerHTML = `
-          <div class="task-colour-pip ${bt.colour || 'green'}"></div>
+          <div style="display:flex;gap:3px;">${pips}</div>
           <div class="banked-card-name">${bt.title}</div>
-          <button class="banked-use-btn" onclick="useBankedTask(${idx})">Use → Complete Space</button>
+          <button class="banked-use-btn" onclick="useBankedTask(${realIdx})" ${isDone ? 'disabled' : ''}>
+            Use Here
+          </button>
         `
         sec.appendChild(bc)
       })
+
+      // Non-redeemable ones (greyed out with reason)
+      nonRedeemable.forEach((bt) => {
+        const btColours = Array.isArray(bt.colours) ? bt.colours : [bt.colour || 'green']
+        const pips = btColours.map(c => `<div class="task-colour-pip ${c}"></div>`).join('')
+        const bc = document.createElement('div')
+        bc.className = 'banked-card'
+        bc.style.opacity = '0.4'
+        bc.innerHTML = `
+          <div style="display:flex;gap:3px;">${pips}</div>
+          <div class="banked-card-name">${bt.title}</div>
+          <span style="font-size:0.68rem;color:var(--grey);white-space:nowrap;">
+            ${btColours.join('/')} only
+          </span>
+        `
+        sec.appendChild(bc)
+      })
+
       body.appendChild(sec)
+    }
+
+    // Red space: one big "Bank Easier Task" button at the bottom
+    if (colour === 'red' && !isDone) {
+      const bankBtn = document.createElement('button')
+      bankBtn.className = 'task-btn task-btn-bank'
+      bankBtn.style.cssText = 'width:100%;margin-top:0.25rem;padding:0.6rem;font-size:0.85rem;'
+      bankBtn.textContent = banked.length >= 3 ? '⭐ Bank Full (3/3)' : '⭐ Bank an Easier Task'
+      bankBtn.disabled = banked.length >= 3
+      bankBtn.onclick = openBankModal
+      body.appendChild(bankBtn)
     }
 
     // Advance + skip buttons
@@ -1436,8 +1471,8 @@
     const banked = Array.isArray(currentProfile.banked_tasks) ? currentProfile.banked_tasks : []
     if (banked.length >= 3) return
 
-    const colour    = task.colours[0] || 'green'
-    const newBanked = [...banked, { id: task.id, title: task.title, colour }]
+    // Store full colours array so multi-colour tasks redeem on all matching spaces
+    const newBanked = [...banked, { id: task.id, title: task.title, colours: task.colours }]
     const mySpace   = currentProfile.current_space || 1
 
     await sb.from('completed_tasks').insert({ player_id: currentUser.id, task_id: task.id, space_number: mySpace })
