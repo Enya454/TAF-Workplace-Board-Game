@@ -849,21 +849,49 @@
         lbl.textContent = space.position
         g.appendChild(lbl)
       } else {
-        // Show up to MAX_VISIBLE mini avatars, arranged in a small cluster
-        const visible  = players.slice(0, MAX_VISIBLE)
-        const overflow = players.length - MAX_VISIBLE
-        const count    = visible.length + (overflow > 0 ? 1 : 0) // +1 for overflow bubble
+        // ── Geometric avatar layout ──
+        // 1 player  → centred
+        // 2 players → side by side
+        // 3 players → triangle (2 bottom, 1 top)
+        // 4 players → square (2x2)
+        // 5+        → show 4 + overflow bubble in bottom-right slot
+        const MAX_SHAPE = 4
+        const visible   = players.slice(0, MAX_SHAPE)
+        const overflow  = players.length - MAX_SHAPE
+        const n         = visible.length
+        const D         = AV * 2 + 2   // diameter + gap
 
-        // Layout: row of mini circles centred in the space
-        const totalW   = count * AV * 2 + (count - 1) * 2
-        const startX   = x - totalW / 2 + AV
+        // Generate (offsetX, offsetY) positions relative to circle centre
+        let offsets = []
+        if (n === 1) {
+          offsets = [[0, 0]]
+        } else if (n === 2) {
+          offsets = [[-AV - 1, 0], [AV + 1, 0]]
+        } else if (n === 3) {
+          // Triangle: 1 on top, 2 on bottom
+          const h = AV * 1.4
+          offsets = [
+            [0,       -h * 0.7],           // top centre
+            [-(AV+1),  h * 0.5],           // bottom left
+            [ (AV+1),  h * 0.5],           // bottom right
+          ]
+        } else {
+          // Square: 2x2 grid
+          const half = AV + 1
+          offsets = [
+            [-half, -half],  // top left
+            [ half, -half],  // top right
+            [-half,  half],  // bottom left
+            [ half,  half],  // bottom right
+          ]
+        }
 
+        // Draw visible avatars at computed offsets
         visible.forEach((p, idx) => {
-          const ax = startX + idx * (AV * 2 + 2)
-          const ay = y
+          const ax     = x + offsets[idx][0]
+          const ay     = y + offsets[idx][1]
           const clipId = `clip-${space.position}-${idx}`
 
-          // Clip path
           const clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath')
           clip.setAttribute('id', clipId)
           const cc = document.createElementNS('http://www.w3.org/2000/svg','circle')
@@ -871,12 +899,13 @@
           clip.appendChild(cc); defs.appendChild(clip)
 
           const url = getAvatarUrl(p)
+          // Ring
+          const ring = document.createElementNS('http://www.w3.org/2000/svg','circle')
+          ring.setAttribute('cx', ax); ring.setAttribute('cy', ay); ring.setAttribute('r', AV + 1.5)
+          ring.setAttribute('fill', 'rgba(255,255,255,0.12)')
+          g.appendChild(ring)
+
           if (url) {
-            // White border ring
-            const ring = document.createElementNS('http://www.w3.org/2000/svg','circle')
-            ring.setAttribute('cx', ax); ring.setAttribute('cy', ay); ring.setAttribute('r', AV + 1.5)
-            ring.setAttribute('fill', 'rgba(255,255,255,0.15)')
-            g.appendChild(ring)
             const img = document.createElementNS('http://www.w3.org/2000/svg','image')
             img.setAttribute('href', url)
             img.setAttribute('x', ax - AV); img.setAttribute('y', ay - AV)
@@ -898,15 +927,16 @@
           }
         })
 
-        // Overflow bubble: "+N"
+        // Overflow bubble — sits in bottom-right of the square slot
         if (overflow > 0) {
-          const ax = startX + visible.length * (AV * 2 + 2)
+          const ax = n === 4 ? x + (AV + 1) : x + R - AV   // bottom-right
+          const ay = n === 4 ? y + (AV + 1) : y - R + AV
           const bg = document.createElementNS('http://www.w3.org/2000/svg','circle')
-          bg.setAttribute('cx', ax); bg.setAttribute('cy', y); bg.setAttribute('r', AV)
+          bg.setAttribute('cx', ax); bg.setAttribute('cy', ay); bg.setAttribute('r', AV)
           bg.setAttribute('fill','var(--red)')
           g.appendChild(bg)
           const txt = document.createElementNS('http://www.w3.org/2000/svg','text')
-          txt.setAttribute('x', ax); txt.setAttribute('y', y)
+          txt.setAttribute('x', ax); txt.setAttribute('y', ay)
           txt.setAttribute('class','space-label'); txt.setAttribute('fill','#fff')
           txt.setAttribute('font-size','8')
           txt.textContent = `+${overflow}`
