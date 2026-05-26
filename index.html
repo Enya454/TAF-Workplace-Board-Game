@@ -448,24 +448,19 @@
       return
     }
 
-    // Create account
-    const { data, error } = await sb.auth.signUp({ email, password: pass })
+    // Create account (profile + employee_number update handled by DB trigger on confirmation)
+    const { error } = await sb.auth.signUp({
+      email,
+      password: pass,
+      options: {
+        data: { display_name: name, employee_number: empNum }
+      }
+    })
     if (error) {
       setAlert('signup-alert', error.message)
       setLoading('signup-btn', false, 'Create Account')
       return
     }
-
-    // Create profile
-    await sb.from('profiles').insert({
-      id: data.user.id,
-      employee_number: empNum,
-      display_name: name,
-      role: 'staff',
-    })
-
-    // Mark employee number as used
-    await sb.from('employee_numbers').update({ is_used: true }).eq('employee_number', empNum)
 
     setLoading('signup-btn', false, 'Create Account')
     setAlert('signup-alert', '✓ Account created! Check your email to confirm, then sign in.', 'success')
