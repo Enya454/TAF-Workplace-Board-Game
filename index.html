@@ -415,8 +415,6 @@
   // ════════════════════════════════
   //  AUTH
   // ════════════════════════════════
-  let appBooted = false
-
   async function handleSession(session) {
     if (!session) { hideLoader(); showPage('login'); return }
     currentUser = session.user
@@ -432,16 +430,30 @@
     }
   }
 
-  // onAuthStateChange fires on every page load with INITIAL_SESSION when already logged in,
-  // and with SIGNED_IN after a fresh login — covers both cases reliably
-  sb.auth.onAuthStateChange(async (event, session) => {
-    if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN') {
-      if (appBooted) return   // prevent double-firing on fresh login
-      appBooted = true
-      await handleSession(session)
+  // getSession() reliably handles the refresh case (session already exists)
+  // onAuthStateChange handles SIGNED_IN after a fresh login, and SIGNED_OUT
+  // The flag prevents double-handling when both fire together on fresh login
+  let handlingSession = false
+
+  sb.auth.getSession().then(({ data: { session } }) => {
+    if (session) {
+      // Already logged in — handle immediately, block SIGNED_IN from doubling up
+      handlingSession = true
+      handleSession(session).finally(() => { handlingSession = false })
+    } else {
+      // Not logged in — just show login page
+      hideLoader()
+      showPage('login')
+    }
+  })
+
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && !handlingSession) {
+      handlingSession = true
+      handleSession(session).finally(() => { handlingSession = false })
     }
     if (event === 'SIGNED_OUT') {
-      appBooted = false
+      handlingSession = false
       currentUser = null; currentProfile = null; boardSpaces = []; allPlayers = []
       hideLoader(); showPage('login')
     }
