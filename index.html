@@ -97,23 +97,28 @@
     /* ── Board area ── */
     .board-area { flex: 1; overflow-y: auto; padding: 1.25rem 1rem; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
 
-    /* ── Player badge (below nav, top-left of board area) ── */
-    .player-badge-wrap { width: 100%; max-width: 740px; flex-shrink: 0; }
+    /* ── Top info row: player badge + task panel side by side ── */
+    .top-info-row {
+      width: 100%; max-width: 740px; flex-shrink: 0;
+      display: flex; gap: 0.75rem; align-items: stretch;
+    }
+
+    /* ── Player badge ── */
     .player-badge {
-      display: inline-flex; align-items: center; gap: 1rem;
+      display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
       background: var(--dark-2); border: 1px solid rgba(255,255,255,0.08);
       border-radius: var(--radius); padding: 0.9rem 1.1rem;
+      flex-shrink: 0; min-width: 140px;
     }
     .badge-avatar-col { display: flex; flex-direction: column; align-items: center; gap: 0.45rem; }
     .badge-stars { display: flex; gap: 0.3rem; }
     .badge-star { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.2); background: var(--dark-3); transition: background 0.2s, border-color 0.2s; }
     .badge-star.filled { background: gold; border-color: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,0.5); }
-    .badge-stats { display: flex; flex-direction: column; gap: 0.3rem; }
-    .badge-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 1.2rem; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1; }
-    .badge-row { display: flex; gap: 1.2rem; flex-wrap: wrap; margin-top: 0.2rem; }
-    .badge-stat { display: flex; flex-direction: column; }
-    .badge-stat-val { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1.3rem; line-height: 1; }
-    .badge-stat-label { font-size: 0.65rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--grey); margin-top: 0.1rem; }
+    .badge-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1; text-align: center; }
+    .badge-row { display: flex; gap: 0.9rem; flex-wrap: wrap; justify-content: center; margin-top: 0.1rem; }
+    .badge-stat { display: flex; flex-direction: column; align-items: center; }
+    .badge-stat-val { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1.2rem; line-height: 1; }
+    .badge-stat-label { font-size: 0.6rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--grey); margin-top: 0.1rem; }
 
     /* ── Space banner ── */
     .space-banner { width: 100%; max-width: 740px; border-radius: var(--radius); padding: 0.9rem 1.2rem; display: flex; align-items: center; gap: 0.9rem; flex-shrink: 0; }
@@ -247,145 +252,143 @@
     @media (max-width: 600px) { .side-panel { display: none; } .board-area { padding: 0.75rem; } }
 
     /* ════════════════════════════
-       TASK PANEL
+       TASK PANEL (right of badge)
     ════════════════════════════ */
-    .task-panel-wrap {
-      width: 100%; max-width: 740px; flex-shrink: 0;
-    }
     .task-panel {
-      background: var(--dark-2);
+      flex: 1; background: var(--dark-2);
       border: 1px solid rgba(255,255,255,0.08);
-      border-radius: var(--radius);
-      overflow: hidden;
+      border-radius: var(--radius); overflow: hidden;
+      display: flex; flex-direction: column; min-width: 0;
     }
     .task-panel-header {
       display: flex; align-items: center; justify-content: space-between;
-      padding: 0.85rem 1.1rem;
+      padding: 0.75rem 1rem;
       border-bottom: 1px solid rgba(255,255,255,0.06);
-      cursor: pointer; user-select: none;
+      flex-shrink: 0;
     }
-    .task-panel-header:hover { background: rgba(255,255,255,0.02); }
-    .task-panel-left { display: flex; align-items: center; gap: 0.75rem; }
     .task-panel-title {
       font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
-      font-size: 1rem; text-transform: uppercase; letter-spacing: 0.04em;
+      font-size: 0.95rem; text-transform: uppercase; letter-spacing: 0.04em;
     }
-    .task-progress-bar-wrap {
-      flex: 1; height: 6px; background: rgba(255,255,255,0.07);
-      border-radius: 99px; overflow: hidden; min-width: 80px; max-width: 200px;
+    .task-panel-title.green { color: var(--green); }
+    .task-panel-title.blue  { color: #60aaff; }
+    .task-panel-title.red   { color: #ff7088; }
+    .task-status-badge {
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+      font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 0.2rem 0.6rem; border-radius: 99px;
     }
-    .task-progress-bar {
-      height: 100%; border-radius: 99px;
-      transition: width 0.4s cubic-bezier(0.16,1,0.3,1);
-    }
-    .task-progress-bar.green { background: var(--green); }
-    .task-progress-bar.blue  { background: var(--blue-s); }
-    .task-progress-bar.red   { background: var(--red); }
-    .task-progress-text {
-      font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
-      font-size: 0.9rem; white-space: nowrap;
-    }
-    .task-panel-toggle { color: var(--grey); font-size: 0.8rem; transition: transform 0.2s; }
-    .task-panel-toggle.open { transform: rotate(180deg); }
+    .task-status-badge.done { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+    .task-status-badge.todo { background: rgba(255,255,255,0.06); color: var(--grey); border: 1px solid rgba(255,255,255,0.1); }
 
-    .task-panel-body { padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
-    .task-panel-body.hidden { display: none; }
+    .task-panel-body {
+      flex: 1; overflow-y: auto; padding: 0.75rem;
+      display: flex; flex-direction: column; gap: 0.5rem;
+    }
 
     /* Task card */
     .task-card {
-      background: var(--dark-3);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: var(--radius-sm);
-      padding: 0.8rem 1rem;
-      display: flex; align-items: flex-start; gap: 0.9rem;
-      transition: border-color 0.15s, background 0.15s;
+      background: var(--dark-3); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius-sm); padding: 0.7rem 0.85rem;
+      display: flex; align-items: flex-start; gap: 0.75rem;
+      transition: border-color 0.15s;
     }
     .task-card:hover { border-color: rgba(255,255,255,0.12); }
-    .task-card.completed {
-      background: rgba(34,197,94,0.06);
-      border-color: rgba(34,197,94,0.2);
-      opacity: 0.7;
-    }
+    .task-card.done-card { opacity: 0.5; background: rgba(34,197,94,0.05); border-color: rgba(34,197,94,0.15); }
     .task-card-info { flex: 1; min-width: 0; }
-    .task-card-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.2rem; }
-    .task-card-desc  { font-size: 0.78rem; color: var(--grey-light); line-height: 1.4; }
-    .task-colour-pip {
-      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
-    }
+    .task-card-title { font-weight: 600; font-size: 0.85rem; margin-bottom: 0.15rem; }
+    .task-card-desc  { font-size: 0.75rem; color: var(--grey-light); line-height: 1.4; }
+    .task-colour-pip { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
     .task-colour-pip.green { background: var(--green); }
     .task-colour-pip.blue  { background: var(--blue-s); }
     .task-colour-pip.red   { background: var(--red); }
 
-    .task-actions { display: flex; flex-direction: column; gap: 0.4rem; flex-shrink: 0; }
+    .task-btns { display: flex; flex-direction: column; gap: 0.35rem; flex-shrink: 0; }
     .task-btn {
       border: none; border-radius: var(--radius-sm);
       font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
-      font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase;
-      padding: 0.4rem 0.75rem; cursor: pointer; white-space: nowrap;
+      font-size: 0.75rem; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 0.35rem 0.65rem; cursor: pointer; white-space: nowrap;
       transition: background 0.15s, transform 0.1s;
     }
-    .task-btn:active { transform: scale(0.97); }
+    .task-btn:active:not(:disabled) { transform: scale(0.97); }
     .task-btn-complete { background: var(--green); color: #000; }
     .task-btn-complete:hover { background: #16a34a; }
-    .task-btn-bank { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
-    .task-btn-bank:hover { background: rgba(245,158,11,0.25); }
-    .task-btn-bank:disabled { opacity: 0.4; cursor: not-allowed; }
-    .task-btn-done { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.2); cursor: default; }
+    .task-btn-complete:disabled { opacity: 0.4; cursor: not-allowed; }
+    .task-btn-bank {
+      background: rgba(245,158,11,0.12); color: #f59e0b;
+      border: 1px solid rgba(245,158,11,0.25);
+    }
+    .task-btn-bank:hover:not(:disabled) { background: rgba(245,158,11,0.22); }
+    .task-btn-bank:disabled { opacity: 0.35; cursor: not-allowed; }
 
-    /* Banked tasks section */
-    .banked-section { margin-top: 0.4rem; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.06); }
+    /* Banked tasks in panel */
+    .banked-section {
+      padding-top: 0.5rem; margin-top: 0.25rem;
+      border-top: 1px solid rgba(255,255,255,0.06);
+    }
     .banked-title {
       font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
-      font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
-      color: #f59e0b; margin-bottom: 0.5rem;
+      font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: #f59e0b; margin-bottom: 0.4rem;
     }
-    .banked-list { display: flex; flex-direction: column; gap: 0.4rem; }
     .banked-card {
-      background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.2);
-      border-radius: var(--radius-sm); padding: 0.55rem 0.8rem;
-      display: flex; align-items: center; gap: 0.75rem;
+      background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.18);
+      border-radius: var(--radius-sm); padding: 0.45rem 0.7rem;
+      display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.35rem;
     }
-    .banked-card-name { flex: 1; font-size: 0.82rem; font-weight: 600; }
+    .banked-card-name { flex: 1; font-size: 0.8rem; font-weight: 600; }
     .banked-use-btn {
       background: #f59e0b; color: #000; border: none; border-radius: var(--radius-sm);
       font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
-      font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase;
-      padding: 0.3rem 0.6rem; cursor: pointer;
+      font-size: 0.7rem; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 0.28rem 0.55rem; cursor: pointer;
     }
     .banked-use-btn:hover { background: #d97706; }
 
-    /* Move forward / skip ticket buttons */
+    /* Advance + skip */
     .advance-wrap {
       width: 100%; max-width: 740px; display: flex; gap: 0.75rem; flex-shrink: 0;
     }
     .btn-advance {
-      flex: 1; background: var(--green); color: #000;
-      border: none; border-radius: var(--radius-sm);
+      flex: 1; background: var(--green); color: #000; border: none;
+      border-radius: var(--radius-sm);
       font-family: 'Barlow Condensed', sans-serif; font-weight: 900;
-      font-size: 1.1rem; letter-spacing: 0.06em; text-transform: uppercase;
-      padding: 0.9rem 1.5rem; cursor: pointer;
+      font-size: 1.05rem; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 0.85rem 1.5rem; cursor: pointer;
       display: flex; align-items: center; justify-content: center; gap: 0.5rem;
       transition: background 0.15s, transform 0.1s;
-      box-shadow: 0 4px 16px rgba(34,197,94,0.25);
+      box-shadow: 0 4px 16px rgba(34,197,94,0.2);
     }
-    .btn-advance:hover { background: #16a34a; }
-    .btn-advance:active { transform: scale(0.98); }
+    .btn-advance:hover:not(:disabled) { background: #16a34a; }
+    .btn-advance:active:not(:disabled) { transform: scale(0.98); }
     .btn-advance:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
     .btn-skip {
-      background: rgba(59,130,246,0.15); color: #60aaff;
-      border: 1px solid rgba(59,130,246,0.3); border-radius: var(--radius-sm);
+      background: rgba(59,130,246,0.12); color: #60aaff;
+      border: 1px solid rgba(59,130,246,0.25); border-radius: var(--radius-sm);
       font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
-      font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;
-      padding: 0.9rem 1.1rem; cursor: pointer; white-space: nowrap;
+      font-size: 0.82rem; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 0.85rem 1rem; cursor: pointer; white-space: nowrap;
       transition: background 0.15s;
     }
-    .btn-skip:hover:not(:disabled) { background: rgba(59,130,246,0.25); }
+    .btn-skip:hover:not(:disabled) { background: rgba(59,130,246,0.22); }
     .btn-skip:disabled { opacity: 0.3; cursor: not-allowed; }
 
-    /* Empty task state */
-    .tasks-empty {
-      text-align: center; padding: 1.5rem 1rem; color: var(--grey); font-size: 0.85rem;
+    /* Bank task modal task list */
+    .bank-task-list { display: flex; flex-direction: column; gap: 0.5rem; max-height: 320px; overflow-y: auto; }
+    .bank-task-option {
+      background: var(--dark-3); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--radius-sm); padding: 0.7rem 0.9rem;
+      display: flex; align-items: center; gap: 0.75rem; cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
     }
+    .bank-task-option:hover { border-color: #f59e0b; background: rgba(245,158,11,0.05); }
+    .bank-task-option-info { flex: 1; min-width: 0; }
+    .bank-task-option-title { font-weight: 600; font-size: 0.88rem; }
+    .bank-task-option-desc  { font-size: 0.75rem; color: var(--grey); margin-top: 0.1rem; }
+    .bank-colour-pips { display: flex; gap: 3px; flex-shrink: 0; }
+
+    .tasks-empty { text-align: center; padding: 1.25rem; color: var(--grey); font-size: 0.82rem; }
 
     /* ── Dev panel ── */
     .dev-fab {
@@ -536,8 +539,10 @@
   <div class="game-body">
     <div class="board-area">
 
-      <!-- Player badge -->
-      <div class="player-badge-wrap">
+      <!-- Top info row: player badge + task panel side by side -->
+      <div class="top-info-row">
+
+        <!-- Player badge -->
         <div class="player-badge">
           <div class="badge-avatar-col">
             <div class="av lg clickable" id="nav-avatar" onclick="openAvatarModal()" title="Change avatar"></div>
@@ -547,24 +552,34 @@
               <div class="badge-star" id="bank-star-2"></div>
             </div>
           </div>
-          <div class="badge-stats">
-            <div class="badge-name" id="badge-name"></div>
-            <div class="badge-row">
-              <div class="badge-stat">
-                <div class="badge-stat-val c-red" id="stat-space">—</div>
-                <div class="badge-stat-label">Space</div>
-              </div>
-              <div class="badge-stat">
-                <div class="badge-stat-val c-green" id="stat-laps">—</div>
-                <div class="badge-stat-label">Laps</div>
-              </div>
-              <div class="badge-stat">
-                <div class="badge-stat-val c-blue" id="stat-tickets">—</div>
-                <div class="badge-stat-label">Skip Tickets</div>
-              </div>
+          <div class="badge-name" id="badge-name"></div>
+          <div class="badge-row">
+            <div class="badge-stat">
+              <div class="badge-stat-val c-red" id="stat-space">—</div>
+              <div class="badge-stat-label">Space</div>
+            </div>
+            <div class="badge-stat">
+              <div class="badge-stat-val c-green" id="stat-laps">—</div>
+              <div class="badge-stat-label">Laps</div>
+            </div>
+            <div class="badge-stat">
+              <div class="badge-stat-val c-blue" id="stat-tickets">—</div>
+              <div class="badge-stat-label">Tickets</div>
             </div>
           </div>
         </div>
+
+        <!-- Task panel (fills remaining width) -->
+        <div class="task-panel">
+          <div class="task-panel-header">
+            <span class="task-panel-title" id="task-panel-title">Tasks</span>
+            <span class="task-status-badge todo" id="task-status-badge">Not Done</span>
+          </div>
+          <div class="task-panel-body" id="task-panel-body">
+            <div class="tasks-empty">Loading tasks...</div>
+          </div>
+        </div>
+
       </div>
 
       <!-- Space banner -->
@@ -573,25 +588,6 @@
         <div>
           <div class="banner-title" id="banner-title">Loading...</div>
           <div class="banner-sub" id="banner-sub"></div>
-        </div>
-      </div>
-
-      <!-- Task panel -->
-      <div class="task-panel-wrap">
-        <div class="task-panel">
-          <div class="task-panel-header" onclick="toggleTaskPanel()">
-            <div class="task-panel-left">
-              <span class="task-panel-title" id="task-panel-title">Tasks</span>
-              <div class="task-progress-bar-wrap">
-                <div class="task-progress-bar green" id="task-progress-bar" style="width:0%"></div>
-              </div>
-              <span class="task-progress-text" id="task-progress-text">0 / 0</span>
-            </div>
-            <span class="task-panel-toggle open" id="task-panel-toggle">▼</span>
-          </div>
-          <div class="task-panel-body" id="task-panel-body">
-            <div class="tasks-empty">Loading tasks...</div>
-          </div>
         </div>
       </div>
 
@@ -671,6 +667,26 @@
   <button class="dev-btn-ghost" onclick="clearTestPlayers()">Clear All Test Players</button>
 </div>
 <button class="dev-fab" id="dev-fab" onclick="toggleDevPanel()" title="Test players">🧪</button>
+
+<!-- ══ BANK TASK MODAL ══ -->
+<div id="bank-modal" style="display:none;">
+  <div class="modal-overlay" onclick="closeModalOverlay(event,'bank-modal')">
+    <div class="modal" style="max-width:460px;">
+      <div class="modal-header">
+        <div class="modal-title">⭐ Bank an Easier Task</div>
+        <button class="modal-close" onclick="closeModal('bank-modal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.82rem;color:var(--grey-light);margin-bottom:0.5rem;">
+          You're on a red space. Pick a green or blue task to bank for later use.
+        </p>
+        <div class="bank-task-list" id="bank-task-list">
+          <div class="tasks-empty">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ══ CELEBRATION ══ -->
 <div id="celebration" style="display:none;">
@@ -1274,34 +1290,27 @@
   // ════════════════════════════════
   //  TASK PANEL
   // ════════════════════════════════
-  let taskPanelOpen = true
-
-  function toggleTaskPanel() {
-    taskPanelOpen = !taskPanelOpen
-    document.getElementById('task-panel-body').classList.toggle('hidden', !taskPanelOpen)
-    document.getElementById('task-panel-toggle').classList.toggle('open', taskPanelOpen)
-  }
 
   async function renderTaskPanel() {
     const mySpace   = currentProfile.current_space || 1
     const spaceData = boardSpaces.find(s => s.position === mySpace)
     if (!spaceData) return
 
-    const colour    = spaceData.colour
-    const required  = boardConfig[`${colour}_tasks_required`] || 1
-    const completed = currentProfile.space_tasks_completed || 0
-    const banked    = Array.isArray(currentProfile.banked_tasks) ? currentProfile.banked_tasks : []
+    const colour  = spaceData.colour
+    const isDone  = (currentProfile.space_tasks_completed || 0) >= 1
+    const banked  = Array.isArray(currentProfile.banked_tasks) ? currentProfile.banked_tasks : []
 
-    // Update header
-    document.getElementById('task-panel-title').textContent = `${colour.charAt(0).toUpperCase() + colour.slice(1)} Space Tasks`
-    const pct = Math.min(100, Math.round((completed / required) * 100))
-    document.getElementById('task-progress-bar').style.width = pct + '%'
-    document.getElementById('task-progress-bar').className  = `task-progress-bar ${colour}`
-    document.getElementById('task-progress-text').textContent = `${completed} / ${required}`
+    // Header
+    const titleEl = document.getElementById('task-panel-title')
+    titleEl.textContent = `${colour.charAt(0).toUpperCase() + colour.slice(1)} Space Tasks`
+    titleEl.className   = `task-panel-title ${colour}`
+
+    const badge = document.getElementById('task-status-badge')
+    badge.textContent = isDone ? '✓ Done — Move Forward!' : 'Complete any one task'
+    badge.className   = `task-status-badge ${isDone ? 'done' : 'todo'}`
 
     // Fetch tasks for this colour
     let query = sb.from('tasks').select('*').eq('active', true).contains('colours', [colour])
-    // Blue tasks: filter by current month
     if (colour === 'blue') {
       const month = new Date().getMonth() + 1
       query = query.or(`month.is.null,month.eq.${month}`)
@@ -1309,169 +1318,167 @@
     const { data: tasks } = await query
     currentTasks = tasks || []
 
-    // Build panel body
+    // Build body
     const body = document.getElementById('task-panel-body')
     body.innerHTML = ''
 
     if (currentTasks.length === 0) {
-      body.innerHTML = '<div class="tasks-empty">No tasks set up yet for this space. Ask your manager!</div>'
+      body.innerHTML = '<div class="tasks-empty">No tasks set for this space yet. Ask your manager!</div>'
     } else {
-      // Task cards
       currentTasks.forEach(task => {
-        const isCompleted = completed >= required
         const card = document.createElement('div')
-        card.className = 'task-card'
+        card.className = `task-card${isDone ? ' done-card' : ''}`
+
+        // Colour pips for multi-colour tasks
+        const pips = task.colours.map(c => `<div class="task-colour-pip ${c}"></div>`).join('')
+
         card.innerHTML = `
-          <div class="task-colour-pip ${colour}"></div>
+          <div class="task-btns">
+            <div style="display:flex;gap:3px;margin-bottom:0.3rem;">${pips}</div>
+          </div>
           <div class="task-card-info">
             <div class="task-card-title">${task.title}</div>
             ${task.description ? `<div class="task-card-desc">${task.description}</div>` : ''}
           </div>
-          <div class="task-actions">
-            <button class="task-btn task-btn-complete" onclick="completeTask(${task.id}, '${task.title.replace(/'/g,"\'")}')">
-              ✓ Done
+          <div class="task-btns">
+            <button class="task-btn task-btn-complete"
+              onclick="completeTask(${task.id})"
+              ${isDone ? 'disabled' : ''}>
+              ✓ Complete
             </button>
-            <button class="task-btn task-btn-bank" onclick="bankTask(${task.id}, '${task.title.replace(/'/g,"\'")}', '${colour}')"
+            ${colour === 'red' ? `
+            <button class="task-btn task-btn-bank"
+              onclick="openBankModal()"
               ${banked.length >= 3 ? 'disabled' : ''}>
-              ★ Bank
-            </button>
+              ★ Bank Easier
+            </button>` : ''}
           </div>
         `
         body.appendChild(card)
       })
     }
 
-    // Banked tasks section
+    // Banked tasks (always show if any)
     if (banked.length > 0) {
-      const bankedSec = document.createElement('div')
-      bankedSec.className = 'banked-section'
-      bankedSec.innerHTML = `<div class="banked-title">⭐ Banked Tasks (${banked.length}/3)</div>`
-      const bankedList = document.createElement('div')
-      bankedList.className = 'banked-list'
+      const sec = document.createElement('div')
+      sec.className = 'banked-section'
+      sec.innerHTML = `<div class="banked-title">⭐ Banked Tasks (${banked.length}/3)</div>`
       banked.forEach((bt, idx) => {
         const bc = document.createElement('div')
         bc.className = 'banked-card'
         bc.innerHTML = `
+          <div class="task-colour-pip ${bt.colour || 'green'}"></div>
           <div class="banked-card-name">${bt.title}</div>
-          <button class="banked-use-btn" onclick="useBankedTask(${idx})">Use Now</button>
+          <button class="banked-use-btn" onclick="useBankedTask(${idx})">Use → Complete Space</button>
         `
-        bankedList.appendChild(bc)
+        sec.appendChild(bc)
       })
-      bankedSec.appendChild(bankedList)
-      body.appendChild(bankedSec)
+      body.appendChild(sec)
     }
 
-    // Update advance + skip buttons
-    updateAdvanceButtons(completed, required)
-  }
-
-  function updateAdvanceButtons(completed, required) {
-    const canAdvance = completed >= required
-    const hasTicket  = (currentProfile.skip_tickets || 0) > 0
-    document.getElementById('btn-advance').disabled = !canAdvance
+    // Advance + skip buttons
+    const hasTicket = (currentProfile.skip_tickets || 0) > 0
+    document.getElementById('btn-advance').disabled = !isDone
     document.getElementById('btn-skip').disabled    = !hasTicket
     document.getElementById('btn-skip').textContent = hasTicket
-      ? `🎟 Skip Space (${currentProfile.skip_tickets})`
-      : '🎟 No Skip Tickets'
+      ? `🎟 Skip (${currentProfile.skip_tickets} left)`
+      : '🎟 No Tickets'
   }
 
-  async function completeTask(taskId, taskTitle) {
-    const mySpace  = currentProfile.current_space || 1
-    const spaceData = boardSpaces.find(s => s.position === mySpace)
-    const colour   = spaceData?.colour || 'green'
-    const required = boardConfig[`${colour}_tasks_required`] || 1
-    const current  = currentProfile.space_tasks_completed || 0
+  async function completeTask(taskId) {
+    if ((currentProfile.space_tasks_completed || 0) >= 1) return
 
-    if (current >= required) {
-      alert('You have already completed enough tasks for this space! Move forward.')
-      return
-    }
-
-    const newCount = current + 1
-
-    // Log to completed_tasks
-    await sb.from('completed_tasks').insert({
-      player_id:    currentUser.id,
-      task_id:      taskId,
-      space_number: mySpace
-    })
-
-    // Update profile
-    await sb.from('profiles').update({ space_tasks_completed: newCount }).eq('id', currentUser.id)
-    currentProfile.space_tasks_completed = newCount
+    const mySpace = currentProfile.current_space || 1
+    await sb.from('completed_tasks').insert({ player_id: currentUser.id, task_id: taskId, space_number: mySpace })
+    await sb.from('profiles').update({ space_tasks_completed: 1 }).eq('id', currentUser.id)
+    currentProfile.space_tasks_completed = 1
 
     renderPlayerBadge()
     await renderTaskPanel()
   }
 
-  async function bankTask(taskId, taskTitle, colour) {
+  // ── Bank task modal ──
+  async function openBankModal() {
     const banked = Array.isArray(currentProfile.banked_tasks) ? currentProfile.banked_tasks : []
-    if (banked.length >= 3) { alert('You can only bank up to 3 tasks!'); return }
+    if (banked.length >= 3) return
 
-    const newBanked = [...banked, { id: taskId, title: taskTitle, colour }]
+    const list = document.getElementById('bank-task-list')
+    list.innerHTML = '<div class="tasks-empty">Loading...</div>'
+    document.getElementById('bank-modal').style.display = 'block'
 
-    // Log to completed_tasks as banked
-    await sb.from('completed_tasks').insert({
-      player_id:    currentUser.id,
-      task_id:      taskId,
-      space_number: currentProfile.current_space || 1
+    // Load green + blue tasks
+    const { data: tasks } = await sb.from('tasks').select('*').eq('active', true)
+      .or('colours.cs.{"green"},colours.cs.{"blue"}')
+    list.innerHTML = ''
+
+    if (!tasks || tasks.length === 0) {
+      list.innerHTML = '<div class="tasks-empty">No easier tasks available.</div>'
+      return
+    }
+
+    tasks.forEach(task => {
+      const opt = document.createElement('div')
+      opt.className = 'bank-task-option'
+      const pips = task.colours.map(c => `<div class="task-colour-pip ${c}"></div>`).join('')
+      opt.innerHTML = `
+        <div class="bank-colour-pips">${pips}</div>
+        <div class="bank-task-option-info">
+          <div class="bank-task-option-title">${task.title}</div>
+          ${task.description ? `<div class="bank-task-option-desc">${task.description}</div>` : ''}
+        </div>
+      `
+      opt.onclick = () => confirmBankTask(task)
+      list.appendChild(opt)
     })
+  }
 
+  async function confirmBankTask(task) {
+    const banked = Array.isArray(currentProfile.banked_tasks) ? currentProfile.banked_tasks : []
+    if (banked.length >= 3) return
+
+    const colour    = task.colours[0] || 'green'
+    const newBanked = [...banked, { id: task.id, title: task.title, colour }]
+    const mySpace   = currentProfile.current_space || 1
+
+    await sb.from('completed_tasks').insert({ player_id: currentUser.id, task_id: task.id, space_number: mySpace })
     await sb.from('profiles').update({ banked_tasks: newBanked }).eq('id', currentUser.id)
     currentProfile.banked_tasks = newBanked
 
+    closeModal('bank-modal')
     renderPlayerBadge()
     await renderTaskPanel()
   }
 
   async function useBankedTask(idx) {
-    const banked   = Array.isArray(currentProfile.banked_tasks) ? [...currentProfile.banked_tasks] : []
-    const mySpace  = currentProfile.current_space || 1
-    const spaceData = boardSpaces.find(s => s.position === mySpace)
-    const colour   = spaceData?.colour || 'green'
-    const required = boardConfig[`${colour}_tasks_required`] || 1
-    const current  = currentProfile.space_tasks_completed || 0
-
-    if (current >= required) { alert('Already completed enough tasks for this space!'); return }
-
+    if ((currentProfile.space_tasks_completed || 0) >= 1) return
+    const banked = Array.isArray(currentProfile.banked_tasks) ? [...currentProfile.banked_tasks] : []
     banked.splice(idx, 1)
-    const newCount = current + 1
 
-    await sb.from('profiles').update({
-      banked_tasks: banked,
-      space_tasks_completed: newCount
-    }).eq('id', currentUser.id)
-
-    currentProfile.banked_tasks = banked
-    currentProfile.space_tasks_completed = newCount
+    await sb.from('profiles').update({ banked_tasks: banked, space_tasks_completed: 1 }).eq('id', currentUser.id)
+    currentProfile.banked_tasks          = banked
+    currentProfile.space_tasks_completed = 1
 
     renderPlayerBadge()
     await renderTaskPanel()
   }
 
   async function advanceSpace() {
-    const mySpace    = currentProfile.current_space || 1
+    const mySpace     = currentProfile.current_space || 1
     const totalSpaces = boardConfig.total_spaces || 40
     const isLastSpace = mySpace >= totalSpaces
-    const newSpace   = isLastSpace ? 1 : mySpace + 1
-    const newLaps    = (currentProfile.laps_completed || 0) + (isLastSpace ? 1 : 0)
+    const newSpace    = isLastSpace ? 1 : mySpace + 1
+    const newLaps     = (currentProfile.laps_completed || 0) + (isLastSpace ? 1 : 0)
 
     await sb.from('profiles').update({
-      current_space:         newSpace,
-      laps_completed:        newLaps,
-      space_tasks_completed: 0
+      current_space: newSpace, laps_completed: newLaps, space_tasks_completed: 0
     }).eq('id', currentUser.id)
 
     currentProfile.current_space         = newSpace
     currentProfile.laps_completed        = newLaps
     currentProfile.space_tasks_completed = 0
 
-    // Update allPlayers too
     const idx = allPlayers.findIndex(p => p.id === currentUser.id)
-    if (idx > -1) {
-      allPlayers[idx].current_space  = newSpace
-      allPlayers[idx].laps_completed = newLaps
-    }
+    if (idx > -1) { allPlayers[idx].current_space = newSpace; allPlayers[idx].laps_completed = newLaps }
 
     if (isLastSpace) showCelebration(newLaps)
 
@@ -1487,17 +1494,12 @@
     if (!confirm('Use a skip ticket to skip this space?')) return
 
     const newTickets = currentProfile.skip_tickets - 1
-    await sb.from('profiles').update({
-      skip_tickets: newTickets,
-      space_tasks_completed: boardConfig[`${boardSpaces.find(s=>s.position===(currentProfile.current_space||1))?.colour}_tasks_required`] || 1
-    }).eq('id', currentUser.id)
-
-    currentProfile.skip_tickets           = newTickets
-    currentProfile.space_tasks_completed  = 99  // mark as satisfied
+    await sb.from('profiles').update({ skip_tickets: newTickets, space_tasks_completed: 1 }).eq('id', currentUser.id)
+    currentProfile.skip_tickets          = newTickets
+    currentProfile.space_tasks_completed = 1
 
     renderPlayerBadge()
     await renderTaskPanel()
-    // Auto advance after skip
     await advanceSpace()
   }
 
