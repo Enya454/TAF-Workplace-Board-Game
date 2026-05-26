@@ -246,6 +246,147 @@
 
     @media (max-width: 600px) { .side-panel { display: none; } .board-area { padding: 0.75rem; } }
 
+    /* ════════════════════════════
+       TASK PANEL
+    ════════════════════════════ */
+    .task-panel-wrap {
+      width: 100%; max-width: 740px; flex-shrink: 0;
+    }
+    .task-panel {
+      background: var(--dark-2);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .task-panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.85rem 1.1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      cursor: pointer; user-select: none;
+    }
+    .task-panel-header:hover { background: rgba(255,255,255,0.02); }
+    .task-panel-left { display: flex; align-items: center; gap: 0.75rem; }
+    .task-panel-title {
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+      font-size: 1rem; text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .task-progress-bar-wrap {
+      flex: 1; height: 6px; background: rgba(255,255,255,0.07);
+      border-radius: 99px; overflow: hidden; min-width: 80px; max-width: 200px;
+    }
+    .task-progress-bar {
+      height: 100%; border-radius: 99px;
+      transition: width 0.4s cubic-bezier(0.16,1,0.3,1);
+    }
+    .task-progress-bar.green { background: var(--green); }
+    .task-progress-bar.blue  { background: var(--blue-s); }
+    .task-progress-bar.red   { background: var(--red); }
+    .task-progress-text {
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+      font-size: 0.9rem; white-space: nowrap;
+    }
+    .task-panel-toggle { color: var(--grey); font-size: 0.8rem; transition: transform 0.2s; }
+    .task-panel-toggle.open { transform: rotate(180deg); }
+
+    .task-panel-body { padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem; }
+    .task-panel-body.hidden { display: none; }
+
+    /* Task card */
+    .task-card {
+      background: var(--dark-3);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius-sm);
+      padding: 0.8rem 1rem;
+      display: flex; align-items: flex-start; gap: 0.9rem;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .task-card:hover { border-color: rgba(255,255,255,0.12); }
+    .task-card.completed {
+      background: rgba(34,197,94,0.06);
+      border-color: rgba(34,197,94,0.2);
+      opacity: 0.7;
+    }
+    .task-card-info { flex: 1; min-width: 0; }
+    .task-card-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.2rem; }
+    .task-card-desc  { font-size: 0.78rem; color: var(--grey-light); line-height: 1.4; }
+    .task-colour-pip {
+      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; margin-top: 5px;
+    }
+    .task-colour-pip.green { background: var(--green); }
+    .task-colour-pip.blue  { background: var(--blue-s); }
+    .task-colour-pip.red   { background: var(--red); }
+
+    .task-actions { display: flex; flex-direction: column; gap: 0.4rem; flex-shrink: 0; }
+    .task-btn {
+      border: none; border-radius: var(--radius-sm);
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+      font-size: 0.78rem; letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 0.4rem 0.75rem; cursor: pointer; white-space: nowrap;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .task-btn:active { transform: scale(0.97); }
+    .task-btn-complete { background: var(--green); color: #000; }
+    .task-btn-complete:hover { background: #16a34a; }
+    .task-btn-bank { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+    .task-btn-bank:hover { background: rgba(245,158,11,0.25); }
+    .task-btn-bank:disabled { opacity: 0.4; cursor: not-allowed; }
+    .task-btn-done { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.2); cursor: default; }
+
+    /* Banked tasks section */
+    .banked-section { margin-top: 0.4rem; padding-top: 0.8rem; border-top: 1px solid rgba(255,255,255,0.06); }
+    .banked-title {
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+      font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: #f59e0b; margin-bottom: 0.5rem;
+    }
+    .banked-list { display: flex; flex-direction: column; gap: 0.4rem; }
+    .banked-card {
+      background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.2);
+      border-radius: var(--radius-sm); padding: 0.55rem 0.8rem;
+      display: flex; align-items: center; gap: 0.75rem;
+    }
+    .banked-card-name { flex: 1; font-size: 0.82rem; font-weight: 600; }
+    .banked-use-btn {
+      background: #f59e0b; color: #000; border: none; border-radius: var(--radius-sm);
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+      font-size: 0.75rem; letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 0.3rem 0.6rem; cursor: pointer;
+    }
+    .banked-use-btn:hover { background: #d97706; }
+
+    /* Move forward / skip ticket buttons */
+    .advance-wrap {
+      width: 100%; max-width: 740px; display: flex; gap: 0.75rem; flex-shrink: 0;
+    }
+    .btn-advance {
+      flex: 1; background: var(--green); color: #000;
+      border: none; border-radius: var(--radius-sm);
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 900;
+      font-size: 1.1rem; letter-spacing: 0.06em; text-transform: uppercase;
+      padding: 0.9rem 1.5rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+      transition: background 0.15s, transform 0.1s;
+      box-shadow: 0 4px 16px rgba(34,197,94,0.25);
+    }
+    .btn-advance:hover { background: #16a34a; }
+    .btn-advance:active { transform: scale(0.98); }
+    .btn-advance:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+    .btn-skip {
+      background: rgba(59,130,246,0.15); color: #60aaff;
+      border: 1px solid rgba(59,130,246,0.3); border-radius: var(--radius-sm);
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+      font-size: 0.85rem; letter-spacing: 0.05em; text-transform: uppercase;
+      padding: 0.9rem 1.1rem; cursor: pointer; white-space: nowrap;
+      transition: background 0.15s;
+    }
+    .btn-skip:hover:not(:disabled) { background: rgba(59,130,246,0.25); }
+    .btn-skip:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* Empty task state */
+    .tasks-empty {
+      text-align: center; padding: 1.5rem 1rem; color: var(--grey); font-size: 0.85rem;
+    }
+
     /* ── Dev panel ── */
     .dev-fab {
       position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 400;
@@ -435,6 +576,35 @@
         </div>
       </div>
 
+      <!-- Task panel -->
+      <div class="task-panel-wrap">
+        <div class="task-panel">
+          <div class="task-panel-header" onclick="toggleTaskPanel()">
+            <div class="task-panel-left">
+              <span class="task-panel-title" id="task-panel-title">Tasks</span>
+              <div class="task-progress-bar-wrap">
+                <div class="task-progress-bar green" id="task-progress-bar" style="width:0%"></div>
+              </div>
+              <span class="task-progress-text" id="task-progress-text">0 / 0</span>
+            </div>
+            <span class="task-panel-toggle open" id="task-panel-toggle">▼</span>
+          </div>
+          <div class="task-panel-body" id="task-panel-body">
+            <div class="tasks-empty">Loading tasks...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Move forward / skip ticket -->
+      <div class="advance-wrap">
+        <button class="btn-advance" id="btn-advance" onclick="advanceSpace()" disabled>
+          ✦ Move Forward
+        </button>
+        <button class="btn-skip" id="btn-skip" onclick="useSkipTicket()" disabled>
+          🎟 Skip Space
+        </button>
+      </div>
+
       <div class="board-svg-wrap">
         <svg id="board-svg" xmlns="http://www.w3.org/2000/svg"></svg>
       </div>
@@ -531,6 +701,8 @@
   let currentProfile = null
   let boardSpaces    = []
   let allPlayers     = []
+  let boardConfig    = {}
+  let currentTasks   = []   // tasks for current space colour
   let avatarFileBlob = null
 
   const SPACE_ICONS  = { green: '🟢', blue: '🔵', red: '🔴' }
@@ -650,17 +822,20 @@
   // ════════════════════════════════
   async function initGame() {
     showPage('game')
-    const [spacesRes, playersRes] = await Promise.all([
+    const [spacesRes, playersRes, configRes] = await Promise.all([
       sb.from('board_spaces').select('*').order('position'),
-      sb.from('profiles').select('*').eq('role','staff').order('laps_completed',{ascending:false})
+      sb.from('profiles').select('*').eq('role','staff').order('laps_completed',{ascending:false}),
+      sb.from('board_config').select('*').single()
     ])
-    boardSpaces = spacesRes.data || []
-    allPlayers  = playersRes.data || []
+    boardSpaces  = spacesRes.data  || []
+    allPlayers   = playersRes.data || []
+    boardConfig  = configRes.data  || { green_tasks_required:1, blue_tasks_required:2, red_tasks_required:3, total_spaces:40 }
     renderNav()
     renderPlayerBadge()
     renderBoard()
     renderSidePanel()
     renderSpaceBanner()
+    await renderTaskPanel()
   }
 
   // ════════════════════════════════
@@ -1094,6 +1269,236 @@
     renderSidePanel()
     setLoading('avatar-save-btn', false, 'Save Avatar')
     closeModal('avatar-modal')
+  }
+
+  // ════════════════════════════════
+  //  TASK PANEL
+  // ════════════════════════════════
+  let taskPanelOpen = true
+
+  function toggleTaskPanel() {
+    taskPanelOpen = !taskPanelOpen
+    document.getElementById('task-panel-body').classList.toggle('hidden', !taskPanelOpen)
+    document.getElementById('task-panel-toggle').classList.toggle('open', taskPanelOpen)
+  }
+
+  async function renderTaskPanel() {
+    const mySpace   = currentProfile.current_space || 1
+    const spaceData = boardSpaces.find(s => s.position === mySpace)
+    if (!spaceData) return
+
+    const colour    = spaceData.colour
+    const required  = boardConfig[`${colour}_tasks_required`] || 1
+    const completed = currentProfile.space_tasks_completed || 0
+    const banked    = Array.isArray(currentProfile.banked_tasks) ? currentProfile.banked_tasks : []
+
+    // Update header
+    document.getElementById('task-panel-title').textContent = `${colour.charAt(0).toUpperCase() + colour.slice(1)} Space Tasks`
+    const pct = Math.min(100, Math.round((completed / required) * 100))
+    document.getElementById('task-progress-bar').style.width = pct + '%'
+    document.getElementById('task-progress-bar').className  = `task-progress-bar ${colour}`
+    document.getElementById('task-progress-text').textContent = `${completed} / ${required}`
+
+    // Fetch tasks for this colour
+    let query = sb.from('tasks').select('*').eq('active', true).contains('colours', [colour])
+    // Blue tasks: filter by current month
+    if (colour === 'blue') {
+      const month = new Date().getMonth() + 1
+      query = query.or(`month.is.null,month.eq.${month}`)
+    }
+    const { data: tasks } = await query
+    currentTasks = tasks || []
+
+    // Build panel body
+    const body = document.getElementById('task-panel-body')
+    body.innerHTML = ''
+
+    if (currentTasks.length === 0) {
+      body.innerHTML = '<div class="tasks-empty">No tasks set up yet for this space. Ask your manager!</div>'
+    } else {
+      // Task cards
+      currentTasks.forEach(task => {
+        const isCompleted = completed >= required
+        const card = document.createElement('div')
+        card.className = 'task-card'
+        card.innerHTML = `
+          <div class="task-colour-pip ${colour}"></div>
+          <div class="task-card-info">
+            <div class="task-card-title">${task.title}</div>
+            ${task.description ? `<div class="task-card-desc">${task.description}</div>` : ''}
+          </div>
+          <div class="task-actions">
+            <button class="task-btn task-btn-complete" onclick="completeTask(${task.id}, '${task.title.replace(/'/g,"\'")}')">
+              ✓ Done
+            </button>
+            <button class="task-btn task-btn-bank" onclick="bankTask(${task.id}, '${task.title.replace(/'/g,"\'")}', '${colour}')"
+              ${banked.length >= 3 ? 'disabled' : ''}>
+              ★ Bank
+            </button>
+          </div>
+        `
+        body.appendChild(card)
+      })
+    }
+
+    // Banked tasks section
+    if (banked.length > 0) {
+      const bankedSec = document.createElement('div')
+      bankedSec.className = 'banked-section'
+      bankedSec.innerHTML = `<div class="banked-title">⭐ Banked Tasks (${banked.length}/3)</div>`
+      const bankedList = document.createElement('div')
+      bankedList.className = 'banked-list'
+      banked.forEach((bt, idx) => {
+        const bc = document.createElement('div')
+        bc.className = 'banked-card'
+        bc.innerHTML = `
+          <div class="banked-card-name">${bt.title}</div>
+          <button class="banked-use-btn" onclick="useBankedTask(${idx})">Use Now</button>
+        `
+        bankedList.appendChild(bc)
+      })
+      bankedSec.appendChild(bankedList)
+      body.appendChild(bankedSec)
+    }
+
+    // Update advance + skip buttons
+    updateAdvanceButtons(completed, required)
+  }
+
+  function updateAdvanceButtons(completed, required) {
+    const canAdvance = completed >= required
+    const hasTicket  = (currentProfile.skip_tickets || 0) > 0
+    document.getElementById('btn-advance').disabled = !canAdvance
+    document.getElementById('btn-skip').disabled    = !hasTicket
+    document.getElementById('btn-skip').textContent = hasTicket
+      ? `🎟 Skip Space (${currentProfile.skip_tickets})`
+      : '🎟 No Skip Tickets'
+  }
+
+  async function completeTask(taskId, taskTitle) {
+    const mySpace  = currentProfile.current_space || 1
+    const spaceData = boardSpaces.find(s => s.position === mySpace)
+    const colour   = spaceData?.colour || 'green'
+    const required = boardConfig[`${colour}_tasks_required`] || 1
+    const current  = currentProfile.space_tasks_completed || 0
+
+    if (current >= required) {
+      alert('You have already completed enough tasks for this space! Move forward.')
+      return
+    }
+
+    const newCount = current + 1
+
+    // Log to completed_tasks
+    await sb.from('completed_tasks').insert({
+      player_id:    currentUser.id,
+      task_id:      taskId,
+      space_number: mySpace
+    })
+
+    // Update profile
+    await sb.from('profiles').update({ space_tasks_completed: newCount }).eq('id', currentUser.id)
+    currentProfile.space_tasks_completed = newCount
+
+    renderPlayerBadge()
+    await renderTaskPanel()
+  }
+
+  async function bankTask(taskId, taskTitle, colour) {
+    const banked = Array.isArray(currentProfile.banked_tasks) ? currentProfile.banked_tasks : []
+    if (banked.length >= 3) { alert('You can only bank up to 3 tasks!'); return }
+
+    const newBanked = [...banked, { id: taskId, title: taskTitle, colour }]
+
+    // Log to completed_tasks as banked
+    await sb.from('completed_tasks').insert({
+      player_id:    currentUser.id,
+      task_id:      taskId,
+      space_number: currentProfile.current_space || 1
+    })
+
+    await sb.from('profiles').update({ banked_tasks: newBanked }).eq('id', currentUser.id)
+    currentProfile.banked_tasks = newBanked
+
+    renderPlayerBadge()
+    await renderTaskPanel()
+  }
+
+  async function useBankedTask(idx) {
+    const banked   = Array.isArray(currentProfile.banked_tasks) ? [...currentProfile.banked_tasks] : []
+    const mySpace  = currentProfile.current_space || 1
+    const spaceData = boardSpaces.find(s => s.position === mySpace)
+    const colour   = spaceData?.colour || 'green'
+    const required = boardConfig[`${colour}_tasks_required`] || 1
+    const current  = currentProfile.space_tasks_completed || 0
+
+    if (current >= required) { alert('Already completed enough tasks for this space!'); return }
+
+    banked.splice(idx, 1)
+    const newCount = current + 1
+
+    await sb.from('profiles').update({
+      banked_tasks: banked,
+      space_tasks_completed: newCount
+    }).eq('id', currentUser.id)
+
+    currentProfile.banked_tasks = banked
+    currentProfile.space_tasks_completed = newCount
+
+    renderPlayerBadge()
+    await renderTaskPanel()
+  }
+
+  async function advanceSpace() {
+    const mySpace    = currentProfile.current_space || 1
+    const totalSpaces = boardConfig.total_spaces || 40
+    const isLastSpace = mySpace >= totalSpaces
+    const newSpace   = isLastSpace ? 1 : mySpace + 1
+    const newLaps    = (currentProfile.laps_completed || 0) + (isLastSpace ? 1 : 0)
+
+    await sb.from('profiles').update({
+      current_space:         newSpace,
+      laps_completed:        newLaps,
+      space_tasks_completed: 0
+    }).eq('id', currentUser.id)
+
+    currentProfile.current_space         = newSpace
+    currentProfile.laps_completed        = newLaps
+    currentProfile.space_tasks_completed = 0
+
+    // Update allPlayers too
+    const idx = allPlayers.findIndex(p => p.id === currentUser.id)
+    if (idx > -1) {
+      allPlayers[idx].current_space  = newSpace
+      allPlayers[idx].laps_completed = newLaps
+    }
+
+    if (isLastSpace) showCelebration(newLaps)
+
+    renderPlayerBadge()
+    renderBoard()
+    renderSidePanel()
+    renderSpaceBanner()
+    await renderTaskPanel()
+  }
+
+  async function useSkipTicket() {
+    if ((currentProfile.skip_tickets || 0) < 1) return
+    if (!confirm('Use a skip ticket to skip this space?')) return
+
+    const newTickets = currentProfile.skip_tickets - 1
+    await sb.from('profiles').update({
+      skip_tickets: newTickets,
+      space_tasks_completed: boardConfig[`${boardSpaces.find(s=>s.position===(currentProfile.current_space||1))?.colour}_tasks_required`] || 1
+    }).eq('id', currentUser.id)
+
+    currentProfile.skip_tickets           = newTickets
+    currentProfile.space_tasks_completed  = 99  // mark as satisfied
+
+    renderPlayerBadge()
+    await renderTaskPanel()
+    // Auto advance after skip
+    await advanceSpace()
   }
 
   // ════════════════════════════════
