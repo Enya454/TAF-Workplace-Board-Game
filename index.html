@@ -1703,10 +1703,22 @@
     }
     svg.appendChild(animG)
 
+    // Set a consistent zoom level for the animation (900 SVG units wide)
+    const ANIM_ZOOM = 900
+    const viewport2 = document.getElementById('board-viewport')
+    const aspect    = viewport2 ? viewport2.clientHeight / viewport2.clientWidth : 0.75
+    const animVbW   = ANIM_ZOOM
+    const animVbH   = ANIM_ZOOM * aspect
+
+    // Start camera centred on from-space at this zoom
+    vbW = animVbW; vbH = animVbH
+    vbX = from.x - animVbW / 2; vbY = from.y - animVbH / 2
+    const svgEl = document.getElementById('board-svg')
+    if (svgEl) svgEl.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
+
     // Tween avatar from→to, camera follows
     const DURATION = 700
     const start    = performance.now()
-    // zoom level: keep current vbW for animation pan
 
     await new Promise(resolve => {
       function step(now) {
@@ -1725,15 +1737,10 @@
         if (txt2) { txt2.setAttribute('x', cx); txt2.setAttribute('y', cy) }
         if (bg2)  { bg2.setAttribute('cx', cx); bg2.setAttribute('cy', cy) }
 
-        // Camera follows avatar — update viewBox to keep avatar centred
-        const viewport2 = document.getElementById('board-viewport')
-        if (viewport2) {
-          const aspect = viewport2.clientHeight / viewport2.clientWidth || 0.75
-          vbX = cx - vbW / 2
-          vbY = cy - vbH / 2
-          const svgEl = document.getElementById('board-svg')
-          if (svgEl) svgEl.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
-        }
+        // Camera follows — keep avatar centred using fixed zoom
+        vbX = cx - animVbW / 2
+        vbY = cy - animVbH / 2
+        if (svgEl) svgEl.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
 
         if (t < 1) requestAnimationFrame(step)
         else resolve()
@@ -1742,7 +1749,8 @@
     })
 
     animG.remove(); clip.remove()
-    boardFocusPosition(toIdx, true, 3)
+    // Settle on destination at same zoom level
+    boardFocusPosition(toIdx, true, ANIM_ZOOM)
     await new Promise(r => setTimeout(r, 250))
   }
 
