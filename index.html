@@ -1272,17 +1272,20 @@
     const AMP   = 70
 
     // Custom positions are stored as 0..1 ratios of the editor canvas
-    // We need to re-normalise them to fit the SVG, using the same
-    // bounding-box stretch approach the editor uses
-    const hasCustomPositions = boardSpaces.some(s => s.x != null && s.x !== undefined)
+    // Check robustly — Supabase may return x/y as numbers or null
+    const hasCustomPositions = boardSpaces.some(s => {
+      const xVal = s.x
+      return xVal !== null && xVal !== undefined && xVal !== '' && !isNaN(parseFloat(xVal))
+    })
+    console.log('[Board] hasCustomPositions:', hasCustomPositions, '| sample x:', boardSpaces[0]?.x, '| type:', typeof boardSpaces[0]?.x)
 
     let positions = []
     let svgH
 
     if (hasCustomPositions) {
       // boardSpaces[].x and .y are 0..1 normalised from the editor canvas
-      const xs = boardSpaces.map(s => s.x ?? 0.5)
-      const ys = boardSpaces.map(s => s.y ?? 0.5)
+      const xs = boardSpaces.map(s => parseFloat(s.x) || 0.5)
+      const ys = boardSpaces.map(s => parseFloat(s.y) || 0.5)
       const minX = Math.min(...xs), maxX = Math.max(...xs)
       const minY = Math.min(...ys), maxY = Math.max(...ys)
       const rangeX = (maxX - minX) || 1
@@ -1296,8 +1299,8 @@
       svgH = drawH + PAD * 2
 
       positions = boardSpaces.map(s => ({
-        x: PAD + ((s.x ?? 0.5) - minX) / rangeX * drawW,
-        y: PAD + ((s.y ?? 0.5) - minY) / rangeY * drawH
+        x: PAD + ((parseFloat(s.x) ?? 0.5) - minX) / rangeX * drawW,
+        y: PAD + ((parseFloat(s.y) ?? 0.5) - minY) / rangeY * drawH
       }))
     } else {
       // Sine wave fallback
@@ -3292,7 +3295,14 @@ Currently on space ${currentSpace}`)
     await Promise.all(promises)
 
     await adminLog('Applied board shape', `${shapeNodes.length} spaces repositioned`)
-    setAlert('shape-alert', `✓ Shape applied to board — ${shapeNodes.length} spaces updated.`, 'success')
+    setAlert('shape-alert', `✓ Shape applied — switch to Staff View to see it live.`, 'success')
+
+    // Refresh boardSpaces in memory so staff view immediately reflects the new shape
+    const { data: fresh } = await sb.from('board_spaces').select('*').order('position')
+    if (fresh) {
+      boardSpaces = fresh
+      console.log('[Apply] Fresh boardSpaces sample x:', fresh[0]?.x, fresh[1]?.x, fresh[2]?.x)
+    }
   }
 
   async function adminSaveShape() {
