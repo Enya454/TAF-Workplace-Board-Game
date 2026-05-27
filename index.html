@@ -249,63 +249,99 @@
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
 
-    /* ── Board space editor ── */
-    .board-editor-grid {
-      display: grid; gap: 5px;
-      grid-template-columns: repeat(10, 1fr);
-    }
+    /* ── Board space colour editor ── */
+    .board-editor-grid { display: grid; gap: 5px; grid-template-columns: repeat(10, 1fr); }
     .board-editor-space {
       aspect-ratio: 1; border-radius: 50%; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
-      font-size: 0.6rem; border: 2px solid transparent;
-      transition: transform 0.1s, filter 0.1s; user-select: none;
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 0.6rem;
+      border: 2px solid transparent; transition: transform 0.1s, filter 0.1s; user-select: none;
     }
     .board-editor-space:hover { transform: scale(1.15); filter: brightness(1.3); }
     .board-editor-space:active { transform: scale(0.95); }
     .board-editor-space.green { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
     .board-editor-space.blue  { background: var(--blue-s-bg); border-color: var(--blue-s-border); color: #60aaff; }
     .board-editor-space.red   { background: var(--red-s-bg); border-color: var(--red-s-border); color: #ff7088; }
-    .board-editor-legend { display: flex; gap: 1rem; align-items: center; font-size: 0.78rem; color: var(--grey-light); }
-    .board-editor-legend span { display: flex; align-items: center; gap: 0.35rem; }
-
-    /* Saved boards list */
-    .saved-board-row {
-      display: flex; align-items: center; gap: 0.75rem;
-      background: var(--dark-3); border: 1px solid rgba(255,255,255,0.06);
-      border-radius: var(--radius-sm); padding: 0.6rem 0.85rem;
-    }
-    .saved-board-name { flex: 1; font-weight: 600; font-size: 0.88rem; }
+    .board-editor-legend { display: flex; gap: 1rem; align-items: center; font-size: 0.78rem; color: var(--grey-light); flex-wrap: wrap; }
+    .saved-board-row { display: flex; align-items: center; gap: 0.75rem; background: var(--dark-3); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-sm); padding: 0.6rem 0.85rem; flex-wrap: wrap; }
+    .saved-board-name { flex: 1; font-weight: 600; font-size: 0.88rem; min-width: 100px; }
     .saved-board-meta { font-size: 0.72rem; color: var(--grey); }
 
-    /* ── Mobile ── */
-    @media (max-width: 600px) {
-      /* Game board */
+    /* ── Board Shape Editor ── */
+    .shape-canvas-wrap {
+      position: relative; width: 100%; background: var(--dark-3);
+      border: 1px solid rgba(255,255,255,0.08); border-radius: var(--radius);
+      overflow: hidden; touch-action: none;
+    }
+    #shape-canvas { display: block; width: 100%; cursor: crosshair; }
+    .shape-toolbar {
+      display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;
+    }
+    .shape-tool {
+      background: var(--dark-3); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius-sm); padding: 0.4rem 0.75rem; cursor: pointer;
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+      font-size: 0.8rem; letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--grey-light); transition: border-color 0.15s, color 0.15s;
+      display: flex; align-items: center; gap: 0.35rem;
+    }
+    .shape-tool:hover { border-color: rgba(255,255,255,0.25); color: #fff; }
+    .shape-tool.active { border-color: var(--red); color: var(--red); background: rgba(232,17,45,0.08); }
+    .shape-hint { font-size: 0.75rem; color: var(--grey); font-style: italic; }
+    .shape-saved-row { display: flex; align-items: center; gap: 0.75rem; background: var(--dark-3); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-sm); padding: 0.55rem 0.85rem; flex-wrap: wrap; }
+    .shape-saved-name { flex: 1; font-weight: 600; font-size: 0.85rem; min-width: 80px; }
+
+    /* ── Admin bottom tab bar (mobile) ── */
+    .admin-bottom-tabs {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
+      background: var(--dark-2); border-top: 1px solid rgba(255,255,255,0.08);
+      height: 60px; overflow-x: auto; overflow-y: hidden;
+    }
+    .admin-bottom-tabs > * { flex-shrink: 0; }
+    .admin-tab {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 2px; padding: 0 14px; height: 100%; cursor: pointer;
+      font-size: 0.58rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase;
+      color: var(--grey); transition: color 0.15s; white-space: nowrap;
+    }
+    .admin-tab span:first-child { font-size: 1.1rem; }
+    .admin-tab:hover { color: var(--grey-light); }
+    .admin-tab.active { color: var(--red); }
+    .admin-more-sheet {
+      position: fixed; inset: 0; z-index: 300;
+    }
+    .admin-more-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.6); }
+    .admin-more-content {
+      position: absolute; bottom: 60px; left: 0; right: 0;
+      background: var(--dark-2); border-top: 1px solid rgba(255,255,255,0.1);
+      padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem;
+    }
+
+    /* ── Mobile responsive ── */
+    @media (max-width: 700px) {
+      /* Game */
       .side-panel { display: none; }
       .board-area { padding: 0.75rem; }
       .top-info-row { flex-direction: column; }
-      .task-panel { min-height: 180px; }
+      .task-panel { min-height: 160px; }
       .advance-wrap { flex-direction: column; }
       .btn-advance, .btn-skip { width: 100%; }
 
-      /* Admin panel */
+      /* Admin — hide desktop sidebar, show bottom tabs */
       #page-admin { flex-direction: column; }
-      .admin-sidebar {
-        width: 100%; flex-direction: row; flex-wrap: wrap;
-        padding: 0.5rem; gap: 0.25rem; border-right: none;
-        border-bottom: 1px solid rgba(255,255,255,0.07);
-      }
-      .admin-sidebar-logo { display: none; }
-      .admin-sidebar-bottom { flex-direction: row; margin-top: 0; padding: 0; gap: 0.25rem; }
-      .admin-nav-item { padding: 0.45rem 0.7rem; font-size: 0.78rem; border-left: none; border-bottom: 3px solid transparent; border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
-      .admin-nav-item.active { border-bottom-color: var(--red); border-left-color: transparent; }
-      .admin-nav-icon { display: none; }
-      .admin-main { min-height: 0; flex: 1; }
-      .admin-content { padding: 0.85rem; }
+      .admin-sidebar { display: none; }
+      .admin-bottom-tabs { display: flex; }
+      .admin-main { flex: 1; overflow-y: auto; padding-bottom: 60px; }
+      .admin-topbar { padding: 0.75rem 1rem; }
+      .admin-content { padding: 0.85rem; gap: 0.85rem; }
       .config-grid { grid-template-columns: 1fr 1fr; }
       .admin-form-row { flex-direction: column; }
-      .admin-table th, .admin-table td { padding: 0.4rem 0.5rem; font-size: 0.78rem; }
+      .admin-table { font-size: 0.78rem; }
+      .admin-table th, .admin-table td { padding: 0.4rem 0.5rem; }
       .board-editor-grid { grid-template-columns: repeat(8, 1fr); }
+      .shape-toolbar { gap: 0.35rem; }
+      .shape-tool { padding: 0.35rem 0.55rem; font-size: 0.72rem; }
     }
 
     /* ── Board curve builder ── */
@@ -791,8 +827,8 @@
 <!-- ══ ADMIN ══ -->
 <div class="page" id="page-admin">
 
-  <!-- Sidebar -->
-  <div class="admin-sidebar">
+  <!-- Desktop sidebar -->
+  <div class="admin-sidebar" id="admin-sidebar">
     <div class="admin-sidebar-logo">AF Game<span>Admin Panel</span></div>
     <div class="admin-nav-item active" onclick="adminNav('players')" id="anav-players">
       <span class="admin-nav-icon">👥</span> Players
@@ -806,6 +842,9 @@
     <div class="admin-nav-item" onclick="adminNav('board')" id="anav-board">
       <span class="admin-nav-icon">🎲</span> Board Config
     </div>
+    <div class="admin-nav-item" onclick="adminNav('shape')" id="anav-shape">
+      <span class="admin-nav-icon">✏️</span> Board Shape
+    </div>
     <div class="admin-nav-item" onclick="adminNav('history')" id="anav-history">
       <span class="admin-nav-icon">📜</span> Task History
     </div>
@@ -814,12 +853,12 @@
     </div>
     <div class="admin-sidebar-bottom">
       <button class="btn btn-blue btn-full btn-sm" onclick="enterStaffView()">👟 Staff View</button>
-      <button class="btn btn-ghost btn-full btn-sm" id="board-toggle-btn" onclick="toggleAdminOnBoard()" title="Toggle whether you appear on the game board">🎲 Show on Board: Off</button>
+      <button class="btn btn-ghost btn-full btn-sm" id="board-toggle-btn" onclick="toggleAdminOnBoard()">🎲 Show on Board: Off</button>
       <button class="btn btn-ghost btn-full btn-sm" onclick="handleSignOut()">Sign Out</button>
     </div>
   </div>
 
-  <!-- Main content -->
+  <!-- Main content area -->
   <div class="admin-main">
     <div class="admin-topbar">
       <div class="admin-topbar-title" id="admin-section-title">Players</div>
@@ -827,6 +866,44 @@
     </div>
     <div class="admin-content" id="admin-content">
       <div style="color:var(--grey);text-align:center;padding:3rem;">Loading...</div>
+    </div>
+  </div>
+
+  <!-- Mobile bottom tab bar -->
+  <div class="admin-bottom-tabs" id="admin-bottom-tabs">
+    <div class="admin-tab active" onclick="adminNav('players')" id="atab-players">
+      <span>👥</span><span>Players</span>
+    </div>
+    <div class="admin-tab" onclick="adminNav('tasks')" id="atab-tasks">
+      <span>📋</span><span>Tasks</span>
+    </div>
+    <div class="admin-tab" onclick="adminNav('employees')" id="atab-employees">
+      <span>🪪</span><span>Staff</span>
+    </div>
+    <div class="admin-tab" onclick="adminNav('board')" id="atab-board">
+      <span>🎲</span><span>Board</span>
+    </div>
+    <div class="admin-tab" onclick="adminNav('shape')" id="atab-shape">
+      <span>✏️</span><span>Shape</span>
+    </div>
+    <div class="admin-tab" onclick="adminNav('history')" id="atab-history">
+      <span>📜</span><span>History</span>
+    </div>
+    <div class="admin-tab" onclick="adminNav('auditlog')" id="atab-auditlog">
+      <span>🔍</span><span>Audit</span>
+    </div>
+    <div class="admin-tab" onclick="adminMobileMore()" id="atab-more">
+      <span>⋯</span><span>More</span>
+    </div>
+  </div>
+
+  <!-- Mobile "More" sheet -->
+  <div class="admin-more-sheet" id="admin-more-sheet" style="display:none;">
+    <div class="admin-more-backdrop" onclick="closeMobileMore()"></div>
+    <div class="admin-more-content">
+      <button class="btn btn-blue btn-full" onclick="enterStaffView();closeMobileMore()">👟 Staff View</button>
+      <button class="btn btn-ghost btn-full" id="board-toggle-btn-mobile" onclick="toggleAdminOnBoard()">🎲 Show on Board: Off</button>
+      <button class="btn btn-ghost btn-full" onclick="handleSignOut()">Sign Out</button>
     </div>
   </div>
 </div>
@@ -1179,37 +1256,58 @@
   }
 
   // ════════════════════════════════
-  //  SINE-WAVE BOARD (SVG)
+  //  BOARD (SVG) — uses custom x/y if set, else sine wave
   // ════════════════════════════════
   function renderBoard() {
     const svg   = document.getElementById('board-svg')
     const total = boardSpaces.length
-    const R     = 28    // space circle radius
-    const AV    = 10    // mini avatar radius inside space
-    const MAX_VISIBLE = 3   // max avatars shown before collapsing
+    const R     = 28
+    const AV    = 10
+    const MAX_VISIBLE = 3
     const PAD   = 44
     const WIDTH = 720
     const COLS  = 8
     const AMP   = 70
 
-    const spacingX = (WIDTH - PAD * 2) / (COLS - 1)
-    const positions = []
-    const rowHeight = AMP * 2 + R * 2 + 30
+    // Check if spaces have custom x/y positions stored
+    const hasCustomPositions = boardSpaces.some(s => s.x !== null && s.x !== undefined)
 
-    for (let i = 0; i < total; i++) {
-      const row    = Math.floor(i / COLS)
-      const col    = i % COLS
-      const goRight = row % 2 === 0
-      const colIdx  = goRight ? col : (COLS - 1 - col)
-      const x       = PAD + colIdx * spacingX
-      const t       = col / (COLS - 1)
-      const sineY   = Math.sin(t * Math.PI)
-      const baseY   = PAD + row * rowHeight + AMP
-      const y       = baseY - sineY * AMP
-      positions.push({ x, y })
+    let positions = []
+    let svgH
+
+    if (hasCustomPositions) {
+      // Use stored positions — scale from 0..1 to SVG coordinates
+      // Find bounding box of stored positions
+      const xs = boardSpaces.map(s => s.x ?? 0.5)
+      const ys = boardSpaces.map(s => s.y ?? 0.5)
+      const minX = Math.min(...xs), maxX = Math.max(...xs)
+      const minY = Math.min(...ys), maxY = Math.max(...ys)
+      const rangeX = maxX - minX || 1
+      const rangeY = maxY - minY || 1
+      const drawW = WIDTH - PAD * 2
+      const drawH = Math.max(300, Math.round(drawW * (rangeY / rangeX)))
+      svgH = drawH + PAD * 2
+      positions = boardSpaces.map(s => ({
+        x: PAD + ((s.x ?? 0.5) - minX) / rangeX * drawW,
+        y: PAD + ((s.y ?? 0.5) - minY) / rangeY * drawH
+      }))
+    } else {
+      // Sine wave fallback
+      const spacingX = (WIDTH - PAD * 2) / (COLS - 1)
+      const rowHeight = AMP * 2 + R * 2 + 30
+      for (let i = 0; i < total; i++) {
+        const row = Math.floor(i / COLS)
+        const col = i % COLS
+        const goRight = row % 2 === 0
+        const colIdx  = goRight ? col : (COLS - 1 - col)
+        const x = PAD + colIdx * spacingX
+        const t = col / (COLS - 1)
+        const sineY = Math.sin(t * Math.PI)
+        const baseY = PAD + row * rowHeight + AMP
+        positions.push({ x, y: baseY - sineY * AMP })
+      }
+      svgH = PAD + Math.ceil(total / COLS) * (AMP * 2 + R * 2 + 30) + PAD
     }
-
-    const svgH = PAD + Math.ceil(total / COLS) * rowHeight + PAD
     svg.setAttribute('viewBox', `0 0 ${WIDTH} ${svgH}`)
     svg.innerHTML = ''
 
@@ -1765,15 +1863,36 @@
 
   function adminNav(section) {
     adminSection = section
+    // Sync sidebar
     document.querySelectorAll('.admin-nav-item').forEach(el => el.classList.remove('active'))
     const navEl = document.getElementById('anav-' + section)
     if (navEl) navEl.classList.add('active')
-    const titles = { players:'Players', tasks:'Tasks', employees:'Employee Numbers', board:'Board Config', history:'Task History', auditlog:'Audit Log' }
+    // Sync bottom tabs
+    document.querySelectorAll('.admin-tab').forEach(el => el.classList.remove('active'))
+    const tabEl = document.getElementById('atab-' + section)
+    if (tabEl) tabEl.classList.add('active')
+
+    const titles = { players:'Players', tasks:'Tasks', employees:'Employee Numbers', board:'Board Config', shape:'Board Shape Editor', history:'Task History', auditlog:'Audit Log' }
     document.getElementById('admin-section-title').textContent = titles[section] || section
     const content = document.getElementById('admin-content')
     content.innerHTML = '<div style="color:var(--grey);text-align:center;padding:3rem;"><span class="spinner" style="width:28px;height:28px;border-width:3px;"></span></div>'
-    const fns = { players: adminRenderPlayers, tasks: adminRenderTasks, employees: adminRenderEmployees, board: adminRenderBoard, history: adminRenderHistory, auditlog: adminRenderAuditLog }
+    const fns = { players: adminRenderPlayers, tasks: adminRenderTasks, employees: adminRenderEmployees, board: adminRenderBoard, shape: adminRenderShape, history: adminRenderHistory, auditlog: adminRenderAuditLog }
     if (fns[section]) fns[section]()
+  }
+
+  function adminMobileMore() {
+    document.getElementById('admin-more-sheet').style.display = 'block'
+  }
+  function closeMobileMore() {
+    document.getElementById('admin-more-sheet').style.display = 'none'
+  }
+
+  function syncAdminMobileToggle() {
+    const val = currentProfile?.appear_on_board ? 'On' : 'Off'
+    const b1 = document.getElementById('board-toggle-btn')
+    const b2 = document.getElementById('board-toggle-btn-mobile')
+    if (b1) b1.textContent = `🎲 Show on Board: ${val}`
+    if (b2) b2.textContent = `🎲 Show on Board: ${val}`
   }
 
   // ── PLAYERS ──
@@ -2514,6 +2633,472 @@ Currently on space ${currentSpace}`)
     loadSavedBoards()
   }
 
+  // ── BOARD SHAPE EDITOR ──
+  let shapeNodes     = []   // [{position, x, y, colour}] — working copy
+  let shapeDragIdx   = -1   // which node is being dragged
+  let shapeTool      = 'move'  // 'move' | 'add' | 'delete'
+  let shapeCanvasW   = 600
+  let shapeCanvasH   = 420
+
+  // ── Board shape presets ──
+  const BOARD_SHAPES = {
+
+    // 👟 Sneaker — TAF inspired shoe silhouette
+    sneaker: [
+      {x:0.12,y:0.75},{x:0.10,y:0.65},{x:0.10,y:0.55},{x:0.12,y:0.45},
+      {x:0.15,y:0.38},{x:0.20,y:0.32},{x:0.27,y:0.28},
+      {x:0.35,y:0.25},{x:0.43,y:0.23},{x:0.50,y:0.22},
+      {x:0.58,y:0.23},{x:0.65,y:0.26},{x:0.72,y:0.30},
+      {x:0.78,y:0.35},{x:0.83,y:0.40},{x:0.86,y:0.46},
+      {x:0.88,y:0.54},{x:0.87,y:0.62},{x:0.83,y:0.68},
+      {x:0.78,y:0.72},{x:0.68,y:0.75},{x:0.58,y:0.76},
+      {x:0.48,y:0.76},{x:0.38,y:0.75},{x:0.28,y:0.74},
+      {x:0.20,y:0.74},{x:0.15,y:0.75},{x:0.12,y:0.75}
+    ],
+
+    // 〰️ Sine Wave — classic winding path
+    sinewave: (() => {
+      const pts = []
+      for (let i = 0; i < 32; i++) {
+        const t = i / 31
+        const row = Math.floor(i / 8)
+        const col = i % 8
+        const goRight = row % 2 === 0
+        const cx = goRight ? 0.08 + col * 0.12 : 0.92 - col * 0.12
+        const cy = 0.12 + row * 0.25 - Math.sin((col / 7) * Math.PI) * 0.10
+        pts.push({x: cx, y: cy})
+      }
+      return pts
+    })(),
+
+    // 🌀 Spiral — spaces wind inward like a snail shell
+    spiral: (() => {
+      const pts = []
+      const N = 32
+      for (let i = 0; i < N; i++) {
+        const t = i / (N - 1)
+        const angle = t * Math.PI * 4.5  // ~2.25 full rotations
+        const r = 0.42 - t * 0.32        // radius shrinks from 0.42 to 0.10
+        pts.push({ x: 0.50 + r * Math.cos(angle), y: 0.50 + r * Math.sin(angle) * 0.85 })
+      }
+      return pts
+    })(),
+
+    // ⭐ Star — points radiate out then back in, forming a star outline
+    star: (() => {
+      const pts = []
+      const N = 30
+      const POINTS = 5
+      for (let i = 0; i < N; i++) {
+        const t = i / N
+        const angle = t * Math.PI * 2 - Math.PI / 2
+        // Alternate between outer and inner radius
+        const progress = t * POINTS * 2
+        const phase = progress % 2  // 0→1 = outer→inner, 1→2 = inner→outer
+        const r = phase < 1 ? 0.40 - phase * 0.22 : 0.18 + (phase - 1) * 0.22
+        pts.push({ x: 0.50 + r * Math.cos(angle), y: 0.50 + r * Math.sin(angle) * 0.90 })
+      }
+      return pts
+    })(),
+
+    // ❤️ Heart — classic heart shape
+    heart: (() => {
+      const pts = []
+      const N = 32
+      for (let i = 0; i < N; i++) {
+        const t = (i / N) * Math.PI * 2
+        // Parametric heart curve
+        const x = 0.50 + 0.30 * Math.pow(Math.sin(t), 3)
+        const y = 0.55 - 0.25 * Math.cos(t) + 0.08 * Math.cos(2*t) + 0.03 * Math.cos(3*t) + 0.01 * Math.cos(4*t)
+        pts.push({ x, y })
+      }
+      return pts
+    })(),
+
+    // 8️⃣ Figure Eight — two loops
+    figure8: (() => {
+      const pts = []
+      const N = 32
+      for (let i = 0; i < N; i++) {
+        const t = (i / N) * Math.PI * 2
+        const scale = 0.35
+        const x = 0.50 + scale * Math.sin(t)
+        const y = 0.50 + scale * 0.5 * Math.sin(2 * t)
+        pts.push({ x, y })
+      }
+      return pts
+    })(),
+
+    // 🔵 Circle — simple loop
+    circle: (() => {
+      const pts = []
+      const N = 30
+      for (let i = 0; i < N; i++) {
+        const t = (i / N) * Math.PI * 2 - Math.PI / 2
+        pts.push({ x: 0.50 + 0.38 * Math.cos(t), y: 0.50 + 0.38 * Math.sin(t) })
+      }
+      return pts
+    })(),
+
+    // 🏃 Running Track — oval stadium shape
+    track: (() => {
+      const pts = []
+      const N = 32
+      for (let i = 0; i < N; i++) {
+        const t = (i / N) * Math.PI * 2 - Math.PI / 2
+        const rx = 0.40, ry = 0.28
+        // Squash into stadium oval (flat sides)
+        const raw = Math.cos(t)
+        const cx = Math.sign(raw) * Math.min(Math.abs(raw) * 1.6, 1) * rx
+        pts.push({ x: 0.50 + cx, y: 0.50 + ry * Math.sin(t) })
+      }
+      return pts
+    })(),
+
+    // ⚡ Lightning Bolt — zigzag diagonal strike
+    lightning: [
+      {x:0.65,y:0.08},{x:0.55,y:0.08},{x:0.45,y:0.20},{x:0.55,y:0.20},
+      {x:0.42,y:0.38},{x:0.52,y:0.38},{x:0.36,y:0.58},{x:0.46,y:0.58},
+      {x:0.28,y:0.78},{x:0.38,y:0.78},{x:0.50,y:0.60},{x:0.40,y:0.60},
+      {x:0.55,y:0.42},{x:0.45,y:0.42},{x:0.58,y:0.24},{x:0.48,y:0.24},
+      {x:0.65,y:0.08}
+    ],
+
+    // 🌊 Wave — a smooth horizontal S-wave
+    wave: (() => {
+      const pts = []
+      const N = 32
+      for (let i = 0; i < N; i++) {
+        const t = i / (N - 1)
+        const x = 0.06 + t * 0.88
+        const y = 0.50 + 0.30 * Math.sin(t * Math.PI * 2.5)
+        pts.push({ x, y })
+      }
+      return pts
+    })(),
+  }
+
+  // Legacy alias for loadTAFShape
+  const TAF_SHAPE = BOARD_SHAPES.sneaker
+
+  async function adminRenderShape() {
+    const { data: spaces } = await sb.from('board_spaces').select('*').order('position')
+    const { data: shapes  } = await sb.from('saved_shapes').select('*').order('created_at',{ascending:false})
+    const el = document.getElementById('admin-content')
+
+    el.innerHTML = `
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <div class="admin-section-title">Board Shape Editor</div>
+        </div>
+        <div class="admin-section-body">
+          <p style="font-size:0.82rem;color:var(--grey-light);">
+            Drag nodes to reshape the board path. Add or remove spaces. The path connects them in order (1→2→3…).
+            Changes apply to the live board when you hit <strong>Apply Shape</strong>.
+          </p>
+          <div class="shape-toolbar">
+            <div class="shape-tool active" id="stool-move"    onclick="setShapeTool('move')">✋ Move</div>
+            <div class="shape-tool"        id="stool-add"     onclick="setShapeTool('add')">➕ Add</div>
+            <div class="shape-tool"        id="stool-delete"  onclick="setShapeTool('delete')">🗑 Delete</div>
+            <span class="shape-hint" id="shape-hint">Drag spaces to reposition · right-click to change colour</span>
+          </div>
+          <div style="font-size:0.68rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--grey);margin-top:0.25rem;">Preset Shapes</div>
+          <div class="shape-toolbar" style="flex-wrap:wrap;gap:0.4rem;">
+            <div class="shape-tool shape-preset-btn active" id="spreset-sneaker"   onclick="loadPresetShape('sneaker')">👟 Sneaker</div>
+            <div class="shape-tool shape-preset-btn"        id="spreset-sinewave"  onclick="loadPresetShape('sinewave')">〰️ Sine Wave</div>
+            <div class="shape-tool shape-preset-btn"        id="spreset-spiral"    onclick="loadPresetShape('spiral')">🌀 Spiral</div>
+            <div class="shape-tool shape-preset-btn"        id="spreset-star"      onclick="loadPresetShape('star')">⭐ Star</div>
+            <div class="shape-tool shape-preset-btn"        id="spreset-heart"     onclick="loadPresetShape('heart')">❤️ Heart</div>
+            <div class="shape-tool shape-preset-btn"        id="spreset-figure8"   onclick="loadPresetShape('figure8')">8️⃣ Figure 8</div>
+            <div class="shape-tool shape-preset-btn"        id="spreset-circle"    onclick="loadPresetShape('circle')">🔵 Circle</div>
+            <div class="shape-tool shape-preset-btn"        id="spreset-track"     onclick="loadPresetShape('track')">🏃 Track</div>
+            <div class="shape-tool shape-preset-btn"        id="spreset-lightning" onclick="loadPresetShape('lightning')">⚡ Lightning</div>
+            <div class="shape-tool shape-preset-btn"        id="spreset-wave"      onclick="loadPresetShape('wave')">🌊 Wave</div>
+          </div>
+          <div class="shape-canvas-wrap">
+            <canvas id="shape-canvas" height="420"></canvas>
+          </div>
+          <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;">
+            <button class="btn btn-red" onclick="applyShapeToBoard()">✓ Apply Shape to Board</button>
+            <span style="font-size:0.78rem;color:var(--grey);" id="shape-count"></span>
+          </div>
+          <div id="shape-alert"></div>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section-header"><div class="admin-section-title">Save / Load Shapes</div></div>
+        <div class="admin-section-body">
+          <div class="admin-form-row">
+            <div class="admin-field">
+              <label>Save current shape as</label>
+              <input class="admin-input" id="save-shape-name" placeholder="e.g. TAF Logo v2" />
+            </div>
+            <button class="btn btn-red" style="align-self:flex-end;" onclick="adminSaveShape()">Save</button>
+          </div>
+          <div id="saved-shapes-list"></div>
+          <div id="shape-save-alert"></div>
+        </div>
+      </div>`
+
+    // Init canvas
+    initShapeCanvas(spaces||[])
+    renderSavedShapes(shapes||[])
+  }
+
+  function initShapeCanvas(spaces) {
+    const canvas = document.getElementById('shape-canvas')
+    if (!canvas) return
+    shapeCanvasW = canvas.parentElement.clientWidth || 600
+    canvas.width = shapeCanvasW
+    canvas.height = shapeCanvasH
+
+    // Build shapeNodes from DB positions or generate TAF shape if no positions saved
+    const hasPositions = spaces.some(s => s.x !== null && s.x !== undefined)
+    if (hasPositions) {
+      shapeNodes = spaces.map(s => ({
+        position: s.position, colour: s.colour,
+        x: (s.x ?? 0.5) * shapeCanvasW,
+        y: (s.y ?? 0.5) * shapeCanvasH
+      }))
+    } else {
+      // First time — build from TAF shape, cycling through available spaces
+      shapeNodes = spaces.map((s, i) => {
+        const pt = TAF_SHAPE[i % TAF_SHAPE.length]
+        return { position: s.position, colour: s.colour, x: pt.x * shapeCanvasW, y: pt.y * shapeCanvasH }
+      })
+    }
+
+    updateShapeCount()
+    drawShapeCanvas()
+    attachShapeEvents(canvas)
+  }
+
+  function setShapeTool(tool) {
+    shapeTool = tool
+    document.querySelectorAll('.shape-tool').forEach(el => el.classList.remove('active'))
+    document.getElementById('stool-' + tool)?.classList.add('active')
+    const hints = { move:'Drag spaces to reposition', add:'Click empty area to add a space at the end', delete:'Click a space to remove it' }
+    const hint = document.getElementById('shape-hint')
+    if (hint) hint.textContent = hints[tool] || ''
+    const canvas = document.getElementById('shape-canvas')
+    if (canvas) canvas.style.cursor = tool === 'add' ? 'copy' : tool === 'delete' ? 'not-allowed' : 'grab'
+  }
+
+  function loadTAFShape() {
+    const total = shapeNodes.length || 30
+    shapeNodes = Array.from({length: total}, (_, i) => {
+      const pt = TAF_SHAPE[Math.round(i / (total-1) * (TAF_SHAPE.length-1))]
+      return { position: i+1, colour: shapeNodes[i]?.colour || 'green', x: pt.x * shapeCanvasW, y: pt.y * shapeCanvasH }
+    })
+    updateShapeCount()
+    drawShapeCanvas()
+  }
+
+  function updateShapeCount() {
+    const el = document.getElementById('shape-count')
+    if (el) el.textContent = `${shapeNodes.length} spaces on board`
+  }
+
+  function drawShapeCanvas() {
+    const canvas = document.getElementById('shape-canvas')
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    ctx.clearRect(0, 0, shapeCanvasW, shapeCanvasH)
+
+    // Background grid dots
+    ctx.fillStyle = 'rgba(255,255,255,0.04)'
+    for (let x = 20; x < shapeCanvasW; x += 40) {
+      for (let y = 20; y < shapeCanvasH; y += 40) {
+        ctx.beginPath(); ctx.arc(x, y, 1.5, 0, Math.PI*2); ctx.fill()
+      }
+    }
+
+    if (shapeNodes.length === 0) return
+
+    // Draw path
+    ctx.beginPath()
+    ctx.moveTo(shapeNodes[0].x, shapeNodes[0].y)
+    shapeNodes.forEach((n,i) => { if (i > 0) ctx.lineTo(n.x, n.y) })
+    ctx.strokeStyle = 'rgba(255,255,255,0.12)'
+    ctx.lineWidth = 2
+    ctx.setLineDash([6, 6])
+    ctx.stroke()
+    ctx.setLineDash([])
+
+    // Draw nodes
+    const R = 14
+    shapeNodes.forEach((n, i) => {
+      const colours = { green:['rgba(34,197,94,0.3)','#22c55e'], blue:['rgba(59,130,246,0.3)','#3b82f6'], red:['rgba(232,17,45,0.3)','#E8112D'] }
+      const [fill, stroke] = colours[n.colour] || colours.green
+
+      ctx.beginPath(); ctx.arc(n.x, n.y, R, 0, Math.PI*2)
+      ctx.fillStyle = fill; ctx.fill()
+      ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke()
+
+      // Number label
+      ctx.fillStyle = '#fff'
+      ctx.font = `bold ${R < 12 ? 8 : 10}px "Barlow Condensed", sans-serif`
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      ctx.fillText(n.position, n.x, n.y)
+
+      // Start/end markers
+      if (i === 0) {
+        ctx.fillStyle = '#22c55e'; ctx.font = 'bold 9px sans-serif'
+        ctx.fillText('START', n.x, n.y - R - 6)
+      }
+      if (i === shapeNodes.length - 1) {
+        ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 9px sans-serif'
+        ctx.fillText('END', n.x, n.y - R - 6)
+      }
+    })
+  }
+
+  function getNodeAt(x, y) {
+    const R = 16
+    return shapeNodes.findIndex(n => Math.hypot(n.x - x, n.y - y) < R)
+  }
+
+  function attachShapeEvents(canvas) {
+    let dragging = false
+
+    function getPos(e) {
+      const rect = canvas.getBoundingClientRect()
+      const scaleX = shapeCanvasW / rect.width
+      const scaleY = shapeCanvasH / rect.height
+      const src = e.touches ? e.touches[0] : e
+      return { x: (src.clientX - rect.left) * scaleX, y: (src.clientY - rect.top) * scaleY }
+    }
+
+    function onDown(e) {
+      e.preventDefault()
+      const {x, y} = getPos(e)
+      const idx = getNodeAt(x, y)
+      if (shapeTool === 'move') {
+        if (idx >= 0) { shapeDragIdx = idx; dragging = true; canvas.style.cursor = 'grabbing' }
+      } else if (shapeTool === 'add') {
+        if (idx < 0) {
+          // Add at end, colour cycles green→blue→red based on position
+          const colours = ['green','green','blue','red']
+          const lastCol = shapeNodes[shapeNodes.length-1]?.colour || 'green'
+          shapeNodes.push({ position: shapeNodes.length + 1, colour: lastCol === 'red' ? 'green' : lastCol, x, y })
+          updateShapeCount(); drawShapeCanvas()
+        }
+      } else if (shapeTool === 'delete') {
+        if (idx >= 0 && shapeNodes.length > 2) {
+          shapeNodes.splice(idx, 1)
+          shapeNodes.forEach((n, i) => n.position = i + 1)
+          updateShapeCount(); drawShapeCanvas()
+        }
+      }
+    }
+
+    function onMove(e) {
+      if (!dragging || shapeDragIdx < 0) return
+      e.preventDefault()
+      const {x, y} = getPos(e)
+      shapeNodes[shapeDragIdx].x = Math.max(14, Math.min(shapeCanvasW - 14, x))
+      shapeNodes[shapeDragIdx].y = Math.max(14, Math.min(shapeCanvasH - 14, y))
+      drawShapeCanvas()
+    }
+
+    function onUp() {
+      dragging = false; shapeDragIdx = -1
+      if (shapeTool === 'move') canvas.style.cursor = 'grab'
+    }
+
+    canvas.addEventListener('mousedown',  onDown)
+    canvas.addEventListener('mousemove',  onMove)
+    canvas.addEventListener('mouseup',    onUp)
+    canvas.addEventListener('touchstart', onDown, {passive:false})
+    canvas.addEventListener('touchmove',  onMove, {passive:false})
+    canvas.addEventListener('touchend',   onUp)
+
+    // Right-click to cycle colour
+    canvas.addEventListener('contextmenu', e => {
+      e.preventDefault()
+      const {x, y} = getPos(e)
+      const idx = getNodeAt(x, y)
+      if (idx >= 0) {
+        const cycle = {green:'blue', blue:'red', red:'green'}
+        shapeNodes[idx].colour = cycle[shapeNodes[idx].colour]
+        drawShapeCanvas()
+      }
+    })
+  }
+
+  async function applyShapeToBoard() {
+    if (shapeNodes.length === 0) return
+    // Normalise positions to 0..1 for storage
+    const updates = shapeNodes.map(n => ({
+      position: n.position,
+      colour:   n.colour,
+      x:        parseFloat((n.x / shapeCanvasW).toFixed(4)),
+      y:        parseFloat((n.y / shapeCanvasH).toFixed(4))
+    }))
+
+    // Update all spaces
+    const promises = updates.map(u =>
+      sb.from('board_spaces').update({ colour: u.colour, x: u.x, y: u.y }).eq('position', u.position)
+    )
+    await Promise.all(promises)
+
+    await adminLog('Applied board shape', `${shapeNodes.length} spaces repositioned`)
+    setAlert('shape-alert', `✓ Shape applied to board — ${shapeNodes.length} spaces updated.`, 'success')
+  }
+
+  async function adminSaveShape() {
+    const name = document.getElementById('save-shape-name')?.value.trim()
+    if (!name) { setAlert('shape-save-alert','Please enter a name.'); return }
+    const positions = shapeNodes.map(n => ({
+      position: n.position, colour: n.colour,
+      x: parseFloat((n.x / shapeCanvasW).toFixed(4)),
+      y: parseFloat((n.y / shapeCanvasH).toFixed(4))
+    }))
+    const { error } = await sb.from('saved_shapes').insert({ name, positions })
+    if (error) { setAlert('shape-save-alert', error.message); return }
+    await adminLog(`Saved board shape: "${name}"`)
+    document.getElementById('save-shape-name').value = ''
+    setAlert('shape-save-alert', `✓ Shape "${name}" saved.`, 'success')
+    const { data } = await sb.from('saved_shapes').select('*').order('created_at',{ascending:false})
+    renderSavedShapes(data||[])
+  }
+
+  function renderSavedShapes(shapes) {
+    const list = document.getElementById('saved-shapes-list')
+    if (!list) return
+    if (!shapes.length) { list.innerHTML = '<p style="font-size:0.82rem;color:var(--grey);">No saved shapes yet.</p>'; return }
+    list.innerHTML = shapes.map(s => {
+      const date = new Date(s.created_at).toLocaleDateString('en-AU',{day:'numeric',month:'short'})
+      return `<div class="shape-saved-row">
+        <div class="shape-saved-name">${s.name}</div>
+        <div class="saved-board-meta">${(s.positions||[]).length} nodes · ${date}</div>
+        <button class="btn-xs btn-xs-blue" onclick="adminLoadShape(${s.id})">Load</button>
+        <button class="btn-xs btn-xs-red"  onclick="adminDeleteShape(${s.id})">Delete</button>
+      </div>`
+    }).join('')
+  }
+
+  async function adminLoadShape(id) {
+    const { data } = await sb.from('saved_shapes').select('positions').eq('id',id).single()
+    if (!data) return
+    const canvas = document.getElementById('shape-canvas')
+    if (!canvas) return
+    shapeNodes = (data.positions||[]).map(p => ({
+      position: p.position, colour: p.colour,
+      x: p.x * shapeCanvasW, y: p.y * shapeCanvasH
+    }))
+    updateShapeCount(); drawShapeCanvas()
+    setAlert('shape-save-alert','Shape loaded — hit Apply to push to the board.','success')
+  }
+
+  async function adminDeleteShape(id) {
+    if (!confirm('Delete this saved shape?')) return
+    await sb.from('saved_shapes').delete().eq('id',id)
+    const {data} = await sb.from('saved_shapes').select('*').order('created_at',{ascending:false})
+    renderSavedShapes(data||[])
+  }
+
   // ── AUDIT LOG ──
   async function adminLog(action, details) {
     await sb.from('admin_logs').insert({
@@ -2643,10 +3228,7 @@ Currently on space ${currentSpace}`)
   }
 
   function syncAdminBoardToggle() {
-    const btn = document.getElementById('board-toggle-btn')
-    if (btn && currentProfile) {
-      btn.textContent = `🎲 Show on Board: ${currentProfile.appear_on_board ? 'On' : 'Off'}`
-    }
+    syncAdminMobileToggle()
   }
 
 
