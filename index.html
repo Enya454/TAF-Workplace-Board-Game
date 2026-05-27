@@ -249,7 +249,105 @@
     ::-webkit-scrollbar { width: 5px; }
     ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
 
-    @media (max-width: 600px) { .side-panel { display: none; } .board-area { padding: 0.75rem; } }
+    /* ── Board space editor ── */
+    .board-editor-grid {
+      display: grid; gap: 5px;
+      grid-template-columns: repeat(10, 1fr);
+    }
+    .board-editor-space {
+      aspect-ratio: 1; border-radius: 50%; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+      font-size: 0.6rem; border: 2px solid transparent;
+      transition: transform 0.1s, filter 0.1s; user-select: none;
+    }
+    .board-editor-space:hover { transform: scale(1.15); filter: brightness(1.3); }
+    .board-editor-space:active { transform: scale(0.95); }
+    .board-editor-space.green { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
+    .board-editor-space.blue  { background: var(--blue-s-bg); border-color: var(--blue-s-border); color: #60aaff; }
+    .board-editor-space.red   { background: var(--red-s-bg); border-color: var(--red-s-border); color: #ff7088; }
+    .board-editor-legend { display: flex; gap: 1rem; align-items: center; font-size: 0.78rem; color: var(--grey-light); }
+    .board-editor-legend span { display: flex; align-items: center; gap: 0.35rem; }
+
+    /* Saved boards list */
+    .saved-board-row {
+      display: flex; align-items: center; gap: 0.75rem;
+      background: var(--dark-3); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: var(--radius-sm); padding: 0.6rem 0.85rem;
+    }
+    .saved-board-name { flex: 1; font-weight: 600; font-size: 0.88rem; }
+    .saved-board-meta { font-size: 0.72rem; color: var(--grey); }
+
+    /* ── Mobile ── */
+    @media (max-width: 600px) {
+      /* Game board */
+      .side-panel { display: none; }
+      .board-area { padding: 0.75rem; }
+      .top-info-row { flex-direction: column; }
+      .task-panel { min-height: 180px; }
+      .advance-wrap { flex-direction: column; }
+      .btn-advance, .btn-skip { width: 100%; }
+
+      /* Admin panel */
+      #page-admin { flex-direction: column; }
+      .admin-sidebar {
+        width: 100%; flex-direction: row; flex-wrap: wrap;
+        padding: 0.5rem; gap: 0.25rem; border-right: none;
+        border-bottom: 1px solid rgba(255,255,255,0.07);
+      }
+      .admin-sidebar-logo { display: none; }
+      .admin-sidebar-bottom { flex-direction: row; margin-top: 0; padding: 0; gap: 0.25rem; }
+      .admin-nav-item { padding: 0.45rem 0.7rem; font-size: 0.78rem; border-left: none; border-bottom: 3px solid transparent; border-radius: var(--radius-sm) var(--radius-sm) 0 0; }
+      .admin-nav-item.active { border-bottom-color: var(--red); border-left-color: transparent; }
+      .admin-nav-icon { display: none; }
+      .admin-main { min-height: 0; flex: 1; }
+      .admin-content { padding: 0.85rem; }
+      .config-grid { grid-template-columns: 1fr 1fr; }
+      .admin-form-row { flex-direction: column; }
+      .admin-table th, .admin-table td { padding: 0.4rem 0.5rem; font-size: 0.78rem; }
+      .board-editor-grid { grid-template-columns: repeat(8, 1fr); }
+    }
+
+    /* ── Board curve builder ── */
+    .curve-presets { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .curve-preset {
+      background: var(--dark-3); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-sm); padding: 0.4rem 0.85rem; cursor: pointer;
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+      font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase;
+      color: var(--grey-light); transition: border-color 0.15s, color 0.15s;
+    }
+    .curve-preset:hover { border-color: rgba(255,255,255,0.2); color: #fff; }
+    .curve-preset.active { border-color: var(--red); color: var(--red); background: rgba(232,17,45,0.08); }
+
+    .curve-sliders { display: flex; flex-direction: column; gap: 1rem; }
+    .curve-row { display: flex; flex-direction: column; gap: 0.3rem; }
+    .curve-row-header { display: flex; justify-content: space-between; align-items: center; }
+    .curve-row-label { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--grey-light); }
+    .curve-row-vals { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 0.85rem; }
+    .curve-slider-pair { display: flex; gap: 0.75rem; align-items: center; }
+    .curve-slider {
+      flex: 1; -webkit-appearance: none; appearance: none;
+      height: 4px; border-radius: 99px; outline: none; cursor: pointer;
+    }
+    .curve-slider.green-slider { background: linear-gradient(to right, var(--green), var(--green)); accent-color: var(--green); }
+    .curve-slider.blue-slider  { background: linear-gradient(to right, var(--blue-s), var(--blue-s)); accent-color: var(--blue-s); }
+    .curve-slider.red-slider   { background: linear-gradient(to right, var(--red), var(--red)); accent-color: var(--red); }
+    .curve-slider-label { font-size: 0.68rem; color: var(--grey); width: 28px; text-align: right; flex-shrink: 0; }
+
+    /* Live preview bar */
+    .curve-preview { margin-top: 0.5rem; }
+    .curve-preview-label { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--grey); margin-bottom: 0.4rem; }
+    .curve-preview-track {
+      display: flex; height: 28px; border-radius: 8px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .curve-preview-segment { height: 100%; transition: width 0.2s; position: relative; }
+    .curve-preview-segment span {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+      font-size: 0.7rem; color: rgba(0,0,0,0.7); white-space: nowrap; pointer-events: none;
+    }
 
     /* ════════════════════════════
        ADMIN PANEL
@@ -710,6 +808,9 @@
     </div>
     <div class="admin-nav-item" onclick="adminNav('history')" id="anav-history">
       <span class="admin-nav-icon">📜</span> Task History
+    </div>
+    <div class="admin-nav-item" onclick="adminNav('auditlog')" id="anav-auditlog">
+      <span class="admin-nav-icon">🔍</span> Audit Log
     </div>
     <div class="admin-sidebar-bottom">
       <button class="btn btn-blue btn-full btn-sm" onclick="enterStaffView()">👟 Staff View</button>
@@ -1667,11 +1768,11 @@
     document.querySelectorAll('.admin-nav-item').forEach(el => el.classList.remove('active'))
     const navEl = document.getElementById('anav-' + section)
     if (navEl) navEl.classList.add('active')
-    const titles = { players:'Players', tasks:'Tasks', employees:'Employee Numbers', board:'Board Config', history:'Task History' }
+    const titles = { players:'Players', tasks:'Tasks', employees:'Employee Numbers', board:'Board Config', history:'Task History', auditlog:'Audit Log' }
     document.getElementById('admin-section-title').textContent = titles[section] || section
     const content = document.getElementById('admin-content')
     content.innerHTML = '<div style="color:var(--grey);text-align:center;padding:3rem;"><span class="spinner" style="width:28px;height:28px;border-width:3px;"></span></div>'
-    const fns = { players: adminRenderPlayers, tasks: adminRenderTasks, employees: adminRenderEmployees, board: adminRenderBoard, history: adminRenderHistory }
+    const fns = { players: adminRenderPlayers, tasks: adminRenderTasks, employees: adminRenderEmployees, board: adminRenderBoard, history: adminRenderHistory, auditlog: adminRenderAuditLog }
     if (fns[section]) fns[section]()
   }
 
@@ -1770,6 +1871,7 @@
   async function adminAwardTicket(playerId, name, current) {
     if (!confirm(`Award 1 skip ticket to ${name}? They currently have ${current}.`)) return
     await sb.from('profiles').update({ skip_tickets: current + 1 }).eq('id', playerId)
+    await adminLog(`Awarded skip ticket to ${name}`, `Now has ${current + 1} tickets`)
     adminRenderPlayers()
   }
 
@@ -1780,6 +1882,7 @@ Currently on space ${currentSpace}`)
     const space = parseInt(input)
     if (isNaN(space) || space < 1 || space > (boardConfig.total_spaces||40)) { alert('Invalid space number.'); return }
     await sb.from('profiles').update({ current_space: space, space_tasks_completed: 0 }).eq('id', playerId)
+    await adminLog(`Moved ${name} to space ${space}`, `Was on space ${currentSpace}`)
     adminRenderPlayers()
   }
 
@@ -1787,6 +1890,7 @@ Currently on space ${currentSpace}`)
     if (current < 1) { alert(`${name} has no skip tickets to remove.`); return }
     if (!confirm(`Remove 1 skip ticket from ${name}?`)) return
     await sb.from('profiles').update({ skip_tickets: current - 1 }).eq('id', playerId)
+    await adminLog(`Removed skip ticket from ${name}`, `Now has ${current - 1} tickets`)
     adminRenderPlayers()
   }
 
@@ -2018,19 +2122,20 @@ Currently on space ${currentSpace}`)
   async function adminRenderBoard() {
     const { data: cfg }    = await sb.from('board_config').select('*').single()
     const { data: spaces } = await sb.from('board_spaces').select('*').order('position')
-    const content = document.getElementById('admin-content')
+    const el = document.getElementById('admin-content')
 
     const colourCounts = { green: 0, blue: 0, red: 0 }
     ;(spaces||[]).forEach(s => { if (colourCounts[s.colour] !== undefined) colourCounts[s.colour]++ })
+    const total = cfg?.total_spaces || 40
 
-    content.innerHTML = `
+    el.innerHTML = `
       <div class="admin-section">
         <div class="admin-section-header"><div class="admin-section-title">Game Settings</div></div>
         <div class="admin-section-body">
           <div class="config-grid">
             <div class="config-card">
               <div class="config-card-label">Total Spaces</div>
-              <input class="admin-input" id="cfg-total" type="number" value="${cfg?.total_spaces||40}" min="10" max="100" style="width:100%;margin-top:0.3rem;" />
+              <input class="admin-input" id="cfg-total" type="number" value="${total}" min="10" max="100" style="width:100%;margin-top:0.3rem;" />
             </div>
             <div class="config-card">
               <div class="config-card-label">🟢 Green Tasks Required</div>
@@ -2049,29 +2154,136 @@ Currently on space ${currentSpace}`)
           <div id="cfg-alert"></div>
         </div>
       </div>
+
       <div class="admin-section">
-        <div class="admin-section-header"><div class="admin-section-title">Board Spaces</div></div>
+        <div class="admin-section-header">
+          <div class="admin-section-title">Difficulty Curve</div>
+        </div>
         <div class="admin-section-body">
-          <p style="font-size:0.82rem;color:var(--grey-light);">Current board: <strong>${(spaces||[]).length} spaces</strong> — 🟢 ${colourCounts.green} green · 🔵 ${colourCounts.blue} blue · 🔴 ${colourCounts.red} red</p>
-          <p style="font-size:0.82rem;color:var(--grey-light);">Regenerate the board using a probability distribution. This will reassign all space colours but won't reset player positions.</p>
-          <div class="admin-form-row">
-            <div class="admin-field">
-              <label>🟢 Green %</label>
-              <input class="admin-input" id="prob-green" type="number" value="60" min="0" max="100" />
+          <p style="font-size:0.82rem;color:var(--grey-light);margin-bottom:0.25rem;">
+            Current board: <strong>${(spaces||[]).length} spaces</strong> —
+            🟢 ${colourCounts.green} green &nbsp;·&nbsp; 🔵 ${colourCounts.blue} blue &nbsp;·&nbsp; 🔴 ${colourCounts.red} red
+          </p>
+          <p style="font-size:0.82rem;color:var(--grey-light);">
+            Set how each colour's probability changes from the first space to the last.
+            Green starts high and fades; red starts low and grows. Regenerate to apply.
+          </p>
+
+          <!-- Presets -->
+          <div>
+            <div class="curve-preview-label">Quick Presets</div>
+            <div class="curve-presets">
+              <div class="curve-preset active" id="preset-gentle"    onclick="applyPreset('gentle')">🌱 Gentle</div>
+              <div class="curve-preset"         id="preset-standard" onclick="applyPreset('standard')">⚖️ Standard</div>
+              <div class="curve-preset"         id="preset-steep"    onclick="applyPreset('steep')">🔥 Steep</div>
+              <div class="curve-preset"         id="preset-scurve"   onclick="applyPreset('scurve')">〰️ S-Curve</div>
+              <div class="curve-preset"         id="preset-flat"     onclick="applyPreset('flat')">➖ Flat (No Curve)</div>
             </div>
-            <div class="admin-field">
-              <label>🔵 Blue %</label>
-              <input class="admin-input" id="prob-blue" type="number" value="25" min="0" max="100" />
+          </div>
+
+          <!-- Sliders -->
+          <div class="curve-sliders">
+            <!-- Green -->
+            <div class="curve-row">
+              <div class="curve-row-header">
+                <span class="curve-row-label" style="color:var(--green);">🟢 Green — Start % → End %</span>
+                <span class="curve-row-vals" style="color:var(--green);">
+                  <span id="val-gs">75</span>% → <span id="val-ge">20</span>%
+                </span>
+              </div>
+              <div class="curve-slider-pair">
+                <span class="curve-slider-label">Start</span>
+                <input type="range" class="curve-slider green-slider" id="sl-gs" min="0" max="100" value="75" oninput="onSlider()">
+                <span class="curve-slider-label">End</span>
+                <input type="range" class="curve-slider green-slider" id="sl-ge" min="0" max="100" value="20" oninput="onSlider()">
+              </div>
             </div>
-            <div class="admin-field">
-              <label>🔴 Red %</label>
-              <input class="admin-input" id="prob-red" type="number" value="15" min="0" max="100" />
+            <!-- Blue -->
+            <div class="curve-row">
+              <div class="curve-row-header">
+                <span class="curve-row-label" style="color:#60aaff;">🔵 Blue — Start % → End %</span>
+                <span class="curve-row-vals" style="color:#60aaff;">
+                  <span id="val-bs">20</span>% → <span id="val-be">30</span>%
+                </span>
+              </div>
+              <div class="curve-slider-pair">
+                <span class="curve-slider-label">Start</span>
+                <input type="range" class="curve-slider blue-slider" id="sl-bs" min="0" max="100" value="20" oninput="onSlider()">
+                <span class="curve-slider-label">End</span>
+                <input type="range" class="curve-slider blue-slider" id="sl-be" min="0" max="100" value="30" oninput="onSlider()">
+              </div>
             </div>
-            <button class="btn btn-red" style="align-self:flex-end;" onclick="adminRegenBoard()">Regenerate</button>
+            <!-- Red -->
+            <div class="curve-row">
+              <div class="curve-row-header">
+                <span class="curve-row-label" style="color:#ff7088;">🔴 Red — Start % → End %</span>
+                <span class="curve-row-vals" style="color:#ff7088;">
+                  <span id="val-rs">5</span>% → <span id="val-re">50</span>%
+                </span>
+              </div>
+              <div class="curve-slider-pair">
+                <span class="curve-slider-label">Start</span>
+                <input type="range" class="curve-slider red-slider" id="sl-rs" min="0" max="100" value="5" oninput="onSlider()">
+                <span class="curve-slider-label">End</span>
+                <input type="range" class="curve-slider red-slider" id="sl-re" min="0" max="100" value="50" oninput="onSlider()">
+              </div>
+            </div>
+          </div>
+
+          <!-- Live preview -->
+          <div class="curve-preview">
+            <div class="curve-preview-label">Preview — how spaces will be distributed across the board</div>
+            <div class="curve-preview-track" id="curve-preview-track"></div>
+          </div>
+
+          <div style="display:flex;gap:0.75rem;flex-wrap:wrap;align-items:center;">
+            <button class="btn btn-red" onclick="adminRegenBoard()">Regenerate Board</button>
+            <span style="font-size:0.78rem;color:var(--grey);">Won't reset player positions</span>
           </div>
           <div id="board-alert"></div>
         </div>
+      </div>
+
+      <!-- Manual Board Editor -->
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <div class="admin-section-title">Manual Board Editor</div>
+          <div style="display:flex;gap:0.5rem;">
+            <button class="btn-xs btn-xs-green" onclick="adminSaveBoard()">💾 Save Board</button>
+            <button class="btn-xs btn-xs-red" onclick="adminResetAllPlayers()">⚠️ Reset All Players</button>
+          </div>
+        </div>
+        <div class="admin-section-body">
+          <p style="font-size:0.82rem;color:var(--grey-light);">Click any space to cycle its colour. Changes save immediately.</p>
+          <div class="board-editor-legend">
+            <span><div class="task-colour-pip green" style="display:inline-block;"></div> Green</span>
+            <span><div class="task-colour-pip blue" style="display:inline-block;"></div> Blue</span>
+            <span><div class="task-colour-pip red" style="display:inline-block;"></div> Red</span>
+          </div>
+          <div class="board-editor-grid" id="board-editor-grid"></div>
+        </div>
+      </div>
+
+      <!-- Save / Load Boards -->
+      <div class="admin-section">
+        <div class="admin-section-header"><div class="admin-section-title">Saved Boards</div></div>
+        <div class="admin-section-body">
+          <div class="admin-form-row">
+            <div class="admin-field">
+              <label>Save current board as</label>
+              <input class="admin-input" id="save-board-name" placeholder="e.g. Week 3 Layout" />
+            </div>
+            <button class="btn btn-red" style="align-self:flex-end;" onclick="adminSaveBoardNamed()">Save</button>
+          </div>
+          <div id="saved-boards-list"></div>
+          <div id="save-board-alert"></div>
+        </div>
       </div>`
+
+    // Init preview and board editor
+    updateCurvePreview()
+    renderBoardEditor(spaces||[])
+    loadSavedBoards()
   }
 
   async function adminSaveConfig() {
@@ -2088,27 +2300,259 @@ Currently on space ${currentSpace}`)
     boardConfig = { ...boardConfig, total_spaces: total, green_tasks_required: green, blue_tasks_required: blue, red_tasks_required: red }
   }
 
-  async function adminRegenBoard() {
-    const gPct = parseInt(document.getElementById('prob-green').value) || 60
-    const bPct = parseInt(document.getElementById('prob-blue').value)  || 25
-    const rPct = parseInt(document.getElementById('prob-red').value)   || 15
-    const total = parseInt(document.getElementById('cfg-total').value) || 40
-    const sum = gPct + bPct + rPct
-    if (sum === 0) { setAlert('board-alert','Percentages must add up to more than 0.'); return }
-    if (!confirm(`Regenerate all ${total} spaces with ${gPct}% green, ${bPct}% blue, ${rPct}% red?`)) return
+  // ── Curve helpers ──
+  const PRESETS = {
+    gentle:   { gs:80, ge:40, bs:15, be:25, rs:5,  re:35 },
+    standard: { gs:75, ge:20, bs:20, be:30, rs:5,  re:50 },
+    steep:    { gs:80, ge:10, bs:15, be:20, rs:5,  re:70 },
+    scurve:   { gs:70, ge:15, bs:25, be:25, rs:5,  re:60 },
+    flat:     { gs:60, ge:60, bs:25, be:25, rs:15, re:15 },
+  }
 
+  function applyPreset(name) {
+    const p = PRESETS[name]; if (!p) return
+    document.getElementById('sl-gs').value = p.gs
+    document.getElementById('sl-ge').value = p.ge
+    document.getElementById('sl-bs').value = p.bs
+    document.getElementById('sl-be').value = p.be
+    document.getElementById('sl-rs').value = p.rs
+    document.getElementById('sl-re').value = p.re
+    // Update active preset button
+    document.querySelectorAll('.curve-preset').forEach(el => el.classList.remove('active'))
+    document.getElementById('preset-' + name)?.classList.add('active')
+    updateCurvePreview()
+  }
+
+  function onSlider() {
+    // Clear active preset since user is tweaking manually
+    document.querySelectorAll('.curve-preset').forEach(el => el.classList.remove('active'))
+    updateCurvePreview()
+  }
+
+  function getCurveValues() {
+    return {
+      gs: parseInt(document.getElementById('sl-gs')?.value || 75),
+      ge: parseInt(document.getElementById('sl-ge')?.value || 20),
+      bs: parseInt(document.getElementById('sl-bs')?.value || 20),
+      be: parseInt(document.getElementById('sl-be')?.value || 30),
+      rs: parseInt(document.getElementById('sl-rs')?.value || 5),
+      re: parseInt(document.getElementById('sl-re')?.value || 50),
+    }
+  }
+
+  // Interpolate colour probabilities at position t (0=start, 1=end)
+  function probsAtT(t, v) {
+    const g = v.gs + (v.ge - v.gs) * t
+    const b = v.bs + (v.be - v.bs) * t
+    const r = v.rs + (v.re - v.rs) * t
+    const sum = g + b + r || 1
+    return { g: g/sum, b: b/sum, r: r/sum }
+  }
+
+  function updateCurvePreview() {
+    const v = getCurveValues()
+    // Update labels
+    document.getElementById('val-gs').textContent = v.gs
+    document.getElementById('val-ge').textContent = v.ge
+    document.getElementById('val-bs').textContent = v.bs
+    document.getElementById('val-be').textContent = v.be
+    document.getElementById('val-rs').textContent = v.rs
+    document.getElementById('val-re').textContent = v.re
+
+    // Build preview using 20 sample segments
+    const track = document.getElementById('curve-preview-track')
+    if (!track) return
+    const SEGS = 20
+    let counts = { green: 0, blue: 0, red: 0 }
+    const segColours = Array.from({ length: SEGS }, (_, i) => {
+      const t = i / (SEGS - 1)
+      const p = probsAtT(t, v)
+      const r = Math.random()
+      const c = r < p.g ? 'green' : r < p.g + p.b ? 'blue' : 'red'
+      counts[c]++
+      return c
+    })
+
+    // Show as coloured bar segments
+    track.innerHTML = segColours.map(c => {
+      const bg = c === 'green' ? 'rgba(34,197,94,0.7)' : c === 'blue' ? 'rgba(59,130,246,0.7)' : 'rgba(232,17,45,0.7)'
+      return `<div class="curve-preview-segment" style="flex:1;background:${bg};"></div>`
+    }).join('')
+
+    // Show estimated counts below
+    const totalSpaces = parseInt(document.getElementById('cfg-total')?.value) || 40
+    const ratio = totalSpaces / SEGS
+    track.title = `Estimated: ~${Math.round(counts.green*ratio)} green, ~${Math.round(counts.blue*ratio)} blue, ~${Math.round(counts.red*ratio)} red`
+  }
+
+  async function adminRegenBoard() {
+    const v     = getCurveValues()
+    const total = parseInt(document.getElementById('cfg-total')?.value) || 40
+
+    if (!confirm(`Regenerate board with ${total} spaces using the current difficulty curve?`)) return
+
+    // Generate spaces using interpolated probabilities
     const spaces = Array.from({ length: total }, (_, i) => {
-      const r = Math.random() * sum
-      const colour = r < gPct ? 'green' : r < gPct + bPct ? 'blue' : 'red'
+      const t = total > 1 ? i / (total - 1) : 0
+      const p = probsAtT(t, v)
+      const r = Math.random()
+      const colour = r < p.g ? 'green' : r < p.g + p.b ? 'blue' : 'red'
       return { position: i + 1, colour }
     })
 
-    // Delete existing then insert new
     await sb.from('board_spaces').delete().gte('position', 1)
     const { error } = await sb.from('board_spaces').insert(spaces)
     if (error) { setAlert('board-alert', error.message); return }
-    setAlert('board-alert', `✓ Board regenerated with ${total} spaces!`, 'success')
+
+    const gc = spaces.filter(s=>s.colour==='green').length
+    const bc = spaces.filter(s=>s.colour==='blue').length
+    const rc = spaces.filter(s=>s.colour==='red').length
+    setAlert('board-alert', `✓ Board regenerated — 🟢 ${gc} green · 🔵 ${bc} blue · 🔴 ${rc} red`, 'success')
+    await adminLog('Regenerated board with difficulty curve', `${total} spaces: ${gc} green, ${bc} blue, ${rc} red`)
     adminRenderBoard()
+  }
+
+  // ── BOARD EDITOR ──
+  let editorSpaces = []   // live copy of spaces being edited
+
+  function renderBoardEditor(spaces) {
+    editorSpaces = spaces.map(s => ({ ...s }))
+    const grid = document.getElementById('board-editor-grid')
+    if (!grid) return
+    grid.innerHTML = ''
+    editorSpaces.forEach((s, i) => {
+      const cell = document.createElement('div')
+      cell.className = `board-editor-space ${s.colour}`
+      cell.textContent = s.position
+      cell.title = `Space ${s.position} — ${s.colour}`
+      cell.onclick = () => cycleSpaceColour(i, cell)
+      grid.appendChild(cell)
+    })
+  }
+
+  async function cycleSpaceColour(idx, el) {
+    const cycle = { green: 'blue', blue: 'red', red: 'green' }
+    const oldColour = editorSpaces[idx].colour
+    const newColour = cycle[oldColour]
+    editorSpaces[idx].colour = newColour
+    el.className = `board-editor-space ${newColour}`
+    el.title = `Space ${editorSpaces[idx].position} — ${newColour}`
+
+    // Save to DB immediately
+    await sb.from('board_spaces')
+      .update({ colour: newColour })
+      .eq('position', editorSpaces[idx].position)
+  }
+
+  async function adminSaveBoard() {
+    setAlert('board-alert', '✓ Board saved — spaces updated in database.', 'success')
+    await adminLog('Saved board edits manually')
+  }
+
+  async function adminResetAllPlayers() {
+    if (!confirm('Reset ALL players to space 1 with 0 laps and 0 task progress? This cannot be undone.')) return
+    const { error } = await sb.from('profiles')
+      .update({ current_space: 1, laps_completed: 0, space_tasks_completed: 0 })
+      .eq('role', 'staff')
+    if (error) { alert(error.message); return }
+    await adminLog('Reset all players to space 1')
+    setAlert('board-alert', '✓ All players reset to space 1.', 'success')
+  }
+
+  async function adminSaveBoardNamed() {
+    const name = document.getElementById('save-board-name').value.trim()
+    if (!name) { setAlert('save-board-alert', 'Please enter a name.'); return }
+    const { error } = await sb.from('saved_boards').insert({
+      name,
+      spaces: editorSpaces.map(s => ({ position: s.position, colour: s.colour }))
+    })
+    if (error) { setAlert('save-board-alert', error.message); return }
+    await adminLog(`Saved board preset: "${name}"`)
+    document.getElementById('save-board-name').value = ''
+    setAlert('save-board-alert', `✓ Board saved as "${name}"`, 'success')
+    loadSavedBoards()
+  }
+
+  async function loadSavedBoards() {
+    const { data } = await sb.from('saved_boards').select('*').order('created_at', { ascending: false })
+    const list = document.getElementById('saved-boards-list')
+    if (!list) return
+    if (!data || data.length === 0) {
+      list.innerHTML = '<p style="font-size:0.82rem;color:var(--grey);">No saved boards yet.</p>'
+      return
+    }
+    list.innerHTML = data.map(b => {
+      const date = new Date(b.created_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' })
+      const gc = (b.spaces||[]).filter(s=>s.colour==='green').length
+      const bc = (b.spaces||[]).filter(s=>s.colour==='blue').length
+      const rc = (b.spaces||[]).filter(s=>s.colour==='red').length
+      return `<div class="saved-board-row">
+        <div>
+          <div class="saved-board-name">${b.name}</div>
+          <div class="saved-board-meta">${(b.spaces||[]).length} spaces · 🟢${gc} 🔵${bc} 🔴${rc} · ${date}</div>
+        </div>
+        <button class="btn-xs btn-xs-blue" onclick="adminLoadBoard(${b.id},'${b.name.replace(/'/g,"\'")}')">Load</button>
+        <button class="btn-xs btn-xs-red"  onclick="adminDeleteBoard(${b.id},'${b.name.replace(/'/g,"\'")}')">Delete</button>
+      </div>`
+    }).join('')
+  }
+
+  async function adminLoadBoard(id, name) {
+    if (!confirm(`Load board "${name}"? This will replace all current space colours.`)) return
+    const { data } = await sb.from('saved_boards').select('spaces').eq('id', id).single()
+    if (!data) { alert('Could not load board.'); return }
+    await sb.from('board_spaces').delete().gte('position', 1)
+    await sb.from('board_spaces').insert(data.spaces)
+    await adminLog(`Loaded saved board: "${name}"`)
+    setAlert('save-board-alert', `✓ Board "${name}" loaded.`, 'success')
+    adminRenderBoard()
+  }
+
+  async function adminDeleteBoard(id, name) {
+    if (!confirm(`Delete saved board "${name}"?`)) return
+    await sb.from('saved_boards').delete().eq('id', id)
+    loadSavedBoards()
+  }
+
+  // ── AUDIT LOG ──
+  async function adminLog(action, details) {
+    await sb.from('admin_logs').insert({
+      admin_id:   currentUser?.id,
+      admin_name: currentProfile?.display_name || 'Admin',
+      action,
+      details:    details || null
+    })
+  }
+
+  async function adminRenderAuditLog() {
+    const { data: logs } = await sb.from('admin_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200)
+    const el = document.getElementById('admin-content')
+
+    const rows = (logs||[]).map(l => {
+      const date = new Date(l.created_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
+      return `<tr>
+        <td><strong>${l.admin_name||'—'}</strong></td>
+        <td>${l.action}</td>
+        <td style="color:var(--grey-light);font-size:0.78rem;">${l.details||'—'}</td>
+        <td style="color:var(--grey);font-size:0.75rem;">${date}</td>
+      </tr>`
+    }).join('')
+
+    el.innerHTML = `
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <div class="admin-section-title">Admin Action Log (last 200)</div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr><th>Admin</th><th>Action</th><th>Details</th><th>When</th></tr></thead>
+            <tbody>${rows || '<tr><td colspan="4" style="text-align:center;color:var(--grey);padding:2rem;">No actions logged yet</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>`
   }
 
   // ── TASK HISTORY ──
