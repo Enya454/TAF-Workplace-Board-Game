@@ -95,7 +95,7 @@
     .game-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
 
     /* ── Board area ── */
-    .board-area { flex: 1; overflow-y: auto; padding: 1.25rem 1rem; display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+    .board-area { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; align-items: stretch; gap: 0.75rem; }
 
     /* ── Top info row: player badge + task panel side by side ── */
     .top-info-row {
@@ -121,7 +121,7 @@
     .badge-stat-label { font-size: 0.6rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--grey); margin-top: 0.1rem; }
 
     /* ── Space banner ── */
-    .space-banner { width: 100%; max-width: 740px; border-radius: var(--radius); padding: 0.9rem 1.2rem; display: flex; align-items: center; gap: 0.9rem; flex-shrink: 0; }
+    .space-banner { width: 100%; border-radius: var(--radius); padding: 0.9rem 1.2rem; display: flex; align-items: center; gap: 0.9rem; flex-shrink: 0; }
     .space-banner.green { background: var(--green-bg); border: 1px solid var(--green-border); }
     .space-banner.blue  { background: var(--blue-s-bg); border: 1px solid var(--blue-s-border); }
     .space-banner.red   { background: var(--red-s-bg);  border: 1px solid var(--red-s-border); }
@@ -137,14 +137,18 @@
     ════════════════════════════ */
     .board-svg-wrap {
       width: 100%;
-      max-width: 740px;
       background: var(--dark-2);
       border: 1px solid rgba(255,255,255,0.06);
       border-radius: 20px;
-      overflow: hidden;
+      overflow: visible;
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    #board-svg { width: 100%; display: block; }
+    #board-svg { width: 100%; height: 100%; display: block; }
+
 
     /* Space circles */
     .space-circle {
@@ -590,7 +594,7 @@
 
     /* Advance + skip */
     .advance-wrap {
-      width: 100%; max-width: 740px; display: flex; gap: 0.75rem; flex-shrink: 0;
+      width: 100%; display: flex; gap: 0.75rem; flex-shrink: 0;
     }
     .btn-advance {
       flex: 1; background: var(--green); color: #000; border: none;
@@ -1267,7 +1271,7 @@
     const AV    = 7
     const MAX_VISIBLE = 3
     const PAD   = 90    // extra padding to accommodate START/FINISH badges above top spaces
-    const WIDTH = 720
+    const WIDTH = 1000
     const COLS  = 8
     const AMP   = 90   // bigger amplitude = more vertical spread between rows
 
