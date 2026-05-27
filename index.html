@@ -1745,6 +1745,9 @@
     // Clean up any existing subscription
     if (realtimeChannel) { sb.removeChannel(realtimeChannel); realtimeChannel = null }
 
+    // Deduplicate — track last seen space per player
+    const lastSeenSpace = {}
+
     realtimeChannel = sb.channel('board-moves')
       .on('postgres_changes', {
         event:  'UPDATE',
@@ -1752,15 +1755,29 @@
         table:  'profiles'
       }, payload => {
         const updated = payload.new
-        const old     = payload.old
-        // Ignore our own moves — we already animate those
+        if (!updated?.id) return
+
+        // Ignore our own moves
         const myId = effectiveId() || currentUser?.id
         if (updated.id === myId) return
-        // Only animate if space actually changed
-        if (updated.current_space !== old.current_space) {
-          animateOtherPlayer(updated, old.current_space, updated.current_space)
+
+        const newSpace = updated.current_space || 1
+
+        // Get old space from our local allPlayers cache (reliable)
+        // Fall back to lastSeenSpace if player isn't in allPlayers yet
+        const localPlayer = allPlayers.find(p => p.id === updated.id)
+        const oldSpace    = lastSeenSpace[updated.id]
+                         ?? localPlayer?.current_space
+                         ?? newSpace
+
+        // Deduplicate — ignore if we already processed this move
+        if (lastSeenSpace[updated.id] === newSpace) return
+        lastSeenSpace[updated.id] = newSpace
+
+        if (newSpace !== oldSpace) {
+          animateOtherPlayer(updated, oldSpace, newSpace)
         } else {
-          // Other profile changes (avatar etc) — just refresh silently
+          // Other change (avatar, name etc) — silent refresh
           const idx = allPlayers.findIndex(p => p.id === updated.id)
           if (idx > -1) allPlayers[idx] = { ...allPlayers[idx], ...updated }
           renderBoard()
