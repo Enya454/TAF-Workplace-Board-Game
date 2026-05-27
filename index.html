@@ -1341,22 +1341,79 @@
       const players   = allPlayers.filter(p => (p.current_space || 1) === space.position)
       const fillClass = `space-${colour}-fill${isMine ? ' mine' : ''}`
 
+      const isStart = space.position === 1
+      const isEnd   = space.position === boardSpaces.length
+
       const g = document.createElementNS('http://www.w3.org/2000/svg','g')
       g.setAttribute('class','space-circle')
       g.style.cursor = players.length > 0 ? 'pointer' : 'default'
 
-      // Main circle
+      // Glow ring for start/end
+      if (isStart || isEnd) {
+        const glow = document.createElementNS('http://www.w3.org/2000/svg','circle')
+        glow.setAttribute('cx', x); glow.setAttribute('cy', y); glow.setAttribute('r', R + 10)
+        glow.setAttribute('fill', isStart ? 'rgba(34,197,94,0.18)' : 'rgba(245,158,11,0.18)')
+        g.appendChild(glow)
+        const glow2 = document.createElementNS('http://www.w3.org/2000/svg','circle')
+        glow2.setAttribute('cx', x); glow2.setAttribute('cy', y); glow2.setAttribute('r', R + 5)
+        glow2.setAttribute('fill', 'none')
+        glow2.setAttribute('stroke', isStart ? '#22c55e' : '#f59e0b')
+        glow2.setAttribute('stroke-width', '2')
+        glow2.setAttribute('stroke-dasharray', '4 3')
+        g.appendChild(glow2)
+      }
+
+      // Main circle — bigger for start/end
+      const circR = isStart || isEnd ? R + 4 : R
       const circ = document.createElementNS('http://www.w3.org/2000/svg','circle')
-      circ.setAttribute('cx', x); circ.setAttribute('cy', y); circ.setAttribute('r', R)
-      circ.setAttribute('class', fillClass)
+      circ.setAttribute('cx', x); circ.setAttribute('cy', y); circ.setAttribute('r', circR)
+      if (isStart) {
+        circ.setAttribute('fill', 'rgba(34,197,94,0.35)')
+        circ.setAttribute('stroke', '#22c55e')
+        circ.setAttribute('stroke-width', '3')
+      } else if (isEnd) {
+        circ.setAttribute('fill', 'rgba(245,158,11,0.35)')
+        circ.setAttribute('stroke', '#f59e0b')
+        circ.setAttribute('stroke-width', '3')
+      } else {
+        circ.setAttribute('class', fillClass)
+      }
       g.appendChild(circ)
+
+      // START / END badge pill above the space
+      if (isStart || isEnd) {
+        const label   = isStart ? 'START' : 'FINISH'
+        const bgColor = isStart ? '#22c55e' : '#f59e0b'
+        const pw = 52, ph = 18
+        const px = x - pw / 2, py = y - circR - ph - 6
+
+        const pill = document.createElementNS('http://www.w3.org/2000/svg','rect')
+        pill.setAttribute('x', px); pill.setAttribute('y', py)
+        pill.setAttribute('width', pw); pill.setAttribute('height', ph)
+        pill.setAttribute('rx', '9'); pill.setAttribute('fill', bgColor)
+        g.appendChild(pill)
+
+        const pillTxt = document.createElementNS('http://www.w3.org/2000/svg','text')
+        pillTxt.setAttribute('x', x); pillTxt.setAttribute('y', py + ph / 2)
+        pillTxt.setAttribute('text-anchor', 'middle')
+        pillTxt.setAttribute('dominant-baseline', 'middle')
+        pillTxt.setAttribute('fill', '#000')
+        pillTxt.setAttribute('font-family', 'Barlow Condensed, sans-serif')
+        pillTxt.setAttribute('font-weight', '900')
+        pillTxt.setAttribute('font-size', '11')
+        pillTxt.setAttribute('letter-spacing', '0.5')
+        pillTxt.textContent = label
+        g.appendChild(pillTxt)
+      }
 
       if (players.length === 0) {
         // Space number label
         const lbl = document.createElementNS('http://www.w3.org/2000/svg','text')
         lbl.setAttribute('x', x); lbl.setAttribute('y', y)
         lbl.setAttribute('class','space-label')
-        lbl.textContent = space.position
+        lbl.setAttribute('font-size', isStart || isEnd ? '13' : '11')
+        lbl.setAttribute('fill', isStart ? '#22c55e' : isEnd ? '#f59e0b' : 'rgba(255,255,255,0.45)')
+        lbl.textContent = isStart ? '1' : isEnd ? '🏁' : space.position
         g.appendChild(lbl)
       } else {
         // ── Geometric avatar layout ──
