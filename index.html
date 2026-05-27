@@ -1266,10 +1266,10 @@
     const R     = 28
     const AV    = 10
     const MAX_VISIBLE = 3
-    const PAD   = 60
+    const PAD   = 90    // extra padding to accommodate START/FINISH badges above top spaces
     const WIDTH = 720
     const COLS  = 8
-    const AMP   = 70
+    const AMP   = 90   // bigger amplitude = more vertical spread between rows
 
     // Custom positions are stored as 0..1 ratios of the editor canvas
     // Check robustly — Supabase may return x/y as numbers or null
@@ -1295,8 +1295,8 @@
       // Enforce a minimum height so the board never looks squashed
       const drawW = WIDTH - PAD * 2
       const naturalH = drawW * (rangeY / rangeX)
-      const drawH = Math.max(naturalH, 400)
-      svgH = drawH + PAD * 2
+      const drawH = Math.max(naturalH, 600)  // minimum height for custom shapes
+      svgH = drawH + PAD * 2 + 40  // extra 40px for START/FINISH badge overflow
 
       positions = boardSpaces.map(s => ({
         x: PAD + ((parseFloat(s.x) ?? 0.5) - minX) / rangeX * drawW,
@@ -1305,7 +1305,7 @@
     } else {
       // Sine wave fallback
       const spacingX = (WIDTH - PAD * 2) / (COLS - 1)
-      const rowHeight = AMP * 2 + R * 2 + 30
+      const rowHeight = AMP * 2 + R * 2 + 60  // extra vertical gap between rows
       for (let i = 0; i < total; i++) {
         const row = Math.floor(i / COLS)
         const col = i % COLS
@@ -1317,7 +1317,7 @@
         const baseY = PAD + row * rowHeight + AMP
         positions.push({ x, y: baseY - sineY * AMP })
       }
-      svgH = PAD + Math.ceil(total / COLS) * (AMP * 2 + R * 2 + 30) + PAD
+      svgH = PAD + Math.ceil(total / COLS) * (AMP * 2 + R * 2 + 60) + PAD
     }
     svg.setAttribute('viewBox', `0 0 ${WIDTH} ${svgH}`)
     svg.innerHTML = ''
