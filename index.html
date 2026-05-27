@@ -564,8 +564,6 @@
       font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
       font-size: 0.95rem; letter-spacing: 0.04em; text-transform: uppercase;
     }
-    /* When staff banner is visible, push task bar above it */
-    .staff-banner-visible .mobile-task-bar { bottom: 44px; }
     .staff-view-banner button {
       background: rgba(0,0,0,0.2); border: none; border-radius: 6px;
       font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
@@ -748,13 +746,45 @@
     .tooltip-av img { width: 100%; height: 100%; object-fit: cover; }
 
     /* ══════════════════════════════
-       MOBILE GAME UI
+       MOBILE GAME UI — bottom tab system
     ══════════════════════════════ */
 
-    /* Floating player card — top left */
+    /* Mobile tab bar */
+    .mob-tab-bar {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      z-index: 200; height: 56px;
+      background: var(--dark-2);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      flex-direction: row; align-items: stretch;
+    }
+    .mob-tab {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 2px; cursor: pointer;
+      font-size: 0.55rem; font-weight: 700; letter-spacing: 0.05em;
+      text-transform: uppercase; color: var(--grey);
+      transition: color 0.15s; padding: 0 4px;
+      border: none; background: none;
+    }
+    .mob-tab span:first-child { font-size: 1.2rem; }
+    .mob-tab.active { color: var(--red); }
+    .mob-tab:hover { color: var(--grey-light); }
+
+    /* Mobile panels — full screen slides */
+    .mob-panel {
+      display: none;
+      position: fixed; inset: 0; bottom: 56px;
+      z-index: 190; background: var(--dark);
+      overflow-y: auto; padding: 1rem;
+      animation: slideUp 0.25s cubic-bezier(0.16,1,0.3,1);
+    }
+    .mob-panel.active { display: block; }
+
+    /* Floating player card — top left, only on board tab */
     .mobile-player-card {
       display: none;
-      position: fixed; top: calc(50px + env(safe-area-inset-top, 0px)); left: 10px; z-index: 200;
+      position: fixed; top: calc(50px + env(safe-area-inset-top, 0px)); left: 10px;
+      z-index: 195;
       background: rgba(22,22,22,0.92);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255,255,255,0.1);
@@ -776,40 +806,6 @@
     .mob-card-star { width: 10px; height: 10px; border-radius: 50%;
       border: 1px solid rgba(255,255,255,0.2); background: var(--dark-3); }
     .mob-card-star.filled { background: gold; border-color: #f59e0b; }
-
-    /* Bottom task bar */
-    .mobile-task-bar {
-      display: none;
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 200;
-      background: rgba(22,22,22,0.95);
-      backdrop-filter: blur(16px);
-      border-top: 1px solid rgba(255,255,255,0.1);
-      border-radius: 20px 20px 0 0;
-      transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
-      transform: translateY(calc(100% - 64px));
-      max-height: 85vh;
-    }
-    .mobile-task-bar.open { transform: translateY(0); }
-    .mobile-task-bar-peek {
-      height: 64px; display: flex; align-items: center;
-      padding: 0 1rem; gap: 0.75rem; cursor: pointer;
-    }
-    .mobile-task-bar-handle {
-      width: 36px; height: 4px; border-radius: 99px;
-      background: rgba(255,255,255,0.2); position: absolute;
-      top: 10px; left: 50%; transform: translateX(-50%);
-    }
-    .mob-space-pip { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .mob-space-pip.green { background: var(--green); }
-    .mob-space-pip.blue  { background: var(--blue-s); }
-    .mob-space-pip.red   { background: var(--red); }
-    .mob-bar-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
-      font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.04em; flex: 1; }
-    .mob-bar-status { font-size: 0.72rem; }
-    .mobile-task-bar-body {
-      padding: 0 1rem 1.5rem; overflow-y: auto;
-      max-height: calc(85vh - 64px);
-    }
 
     /* ── Mobile responsive (must be last) ── */
     @media (max-width: 700px) {
@@ -836,8 +832,11 @@
 
       /* Mobile UI elements */
       .mobile-player-card { display: block !important; }
-      .mobile-task-bar { display: block !important; }
+      .mob-tab-bar { display: flex !important; }
       .mobile-sheet { display: none !important; }
+      /* Account for tab bar height */
+      .board-area { padding-bottom: 56px !important; }
+      #page-game { padding-bottom: 0; }
 
       /* Admin — bottom tabs */
       #page-admin { flex-direction: column; height: 100dvh; }
@@ -1020,25 +1019,16 @@
 
   </div>
 
-  <!-- Mobile floating player card (top left) -->
+  <!-- Mobile floating player card (shows on board tab) -->
   <div class="mobile-player-card" id="mobile-player-card">
     <div class="mob-card-top">
       <div class="av sm" id="mobile-avatar" onclick="openAvatarModal()" style="cursor:pointer;"></div>
       <div class="mob-card-name" id="mobile-name"></div>
     </div>
     <div class="mob-card-stats">
-      <div class="mob-card-stat">
-        <div class="mob-card-val c-red" id="mobile-space">—</div>
-        <div class="mob-card-label">Space</div>
-      </div>
-      <div class="mob-card-stat">
-        <div class="mob-card-val c-green" id="mobile-laps">—</div>
-        <div class="mob-card-label">Laps</div>
-      </div>
-      <div class="mob-card-stat">
-        <div class="mob-card-val c-blue" id="mobile-tickets">—</div>
-        <div class="mob-card-label">Tickets</div>
-      </div>
+      <div class="mob-card-stat"><div class="mob-card-val c-red" id="mobile-space">—</div><div class="mob-card-label">Space</div></div>
+      <div class="mob-card-stat"><div class="mob-card-val c-green" id="mobile-laps">—</div><div class="mob-card-label">Laps</div></div>
+      <div class="mob-card-stat"><div class="mob-card-val c-blue" id="mobile-tickets">—</div><div class="mob-card-label">Tickets</div></div>
     </div>
     <div class="mob-card-stars">
       <div class="mob-card-star" id="mob-star-0"></div>
@@ -1047,21 +1037,40 @@
     </div>
   </div>
 
-  <!-- Mobile bottom task bar -->
-  <div class="mobile-task-bar" id="mobile-task-bar">
-    <div class="mobile-task-bar-handle"></div>
-    <div class="mobile-task-bar-peek" onclick="toggleMobileTaskBar()">
-      <div class="mob-space-pip green" id="mob-space-pip"></div>
-      <div class="mob-bar-label" id="mob-bar-label">Tasks</div>
-      <div class="mob-bar-status" id="mob-bar-status"></div>
-      <div style="display:flex;gap:0.4rem;">
-        <button class="btn-advance" id="mobile-btn-advance" onclick="event.stopPropagation();advanceSpace()" disabled
-          style="font-size:0.72rem;padding:0.35rem 0.7rem;box-shadow:none;">✦ Move</button>
-        <button class="btn-skip" id="mobile-btn-skip" onclick="event.stopPropagation();useSkipTicket()" disabled
-          style="font-size:0.68rem;padding:0.35rem 0.6rem;">🎟</button>
-      </div>
+  <!-- Mobile tab bar -->
+  <div class="mob-tab-bar" id="mob-tab-bar">
+    <button class="mob-tab active" id="mobtab-board" onclick="mobNav('board')">
+      <span>🎮</span><span>Board</span>
+    </button>
+    <button class="mob-tab" id="mobtab-tasks" onclick="mobNav('tasks')">
+      <span>📋</span><span>Tasks</span>
+    </button>
+    <button class="mob-tab" id="mobtab-players" onclick="mobNav('players')">
+      <span>👥</span><span>Players</span>
+    </button>
+    <button class="mob-tab" id="mobtab-admin" onclick="mobNav('admin')" style="display:none;">
+      <span>⚙️</span><span>Admin</span>
+    </button>
+  </div>
+
+  <!-- Mobile task panel -->
+  <div class="mob-panel" id="mob-panel-tasks">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.3rem;text-transform:uppercase;margin-bottom:1rem;" id="mob-tasks-title">Tasks</div>
+    <div class="space-banner" id="mob-space-banner" style="margin-bottom:1rem;border-radius:var(--radius);">
+      <div class="banner-icon" id="mob-banner-icon">🟢</div>
+      <div><div class="banner-title" id="mob-banner-title"></div><div class="banner-sub" id="mob-banner-sub"></div></div>
     </div>
-    <div class="mobile-task-bar-body" id="mobile-task-body"></div>
+    <div id="mobile-task-body" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
+    <div style="display:flex;gap:0.6rem;margin-top:1rem;position:sticky;bottom:0;background:var(--dark);padding:0.5rem 0;">
+      <button class="btn-advance" id="mobile-btn-advance" onclick="advanceSpace()" disabled style="flex:1;">✦ Move Forward</button>
+      <button class="btn-skip"    id="mobile-btn-skip"    onclick="useSkipTicket()" disabled>🎟 Skip</button>
+    </div>
+  </div>
+
+  <!-- Mobile players panel -->
+  <div class="mob-panel" id="mob-panel-players">
+    <div style="font-family:'Barlow Condensed',sans-serif;font-weight:900;font-size:1.3rem;text-transform:uppercase;margin-bottom:1rem;">Players</div>
+    <div id="mob-players-list"></div>
   </div>
 
 </div>
@@ -1386,6 +1395,8 @@
     await renderTaskPanel()
     setTimeout(initBoardPan, 100)
     initRealtimeBoard()
+    updateMobAdminTab()
+    mobNav('board')
   }
 
   // Refresh allPlayers from DB and re-render board + panel
@@ -1463,13 +1474,12 @@
     if (ml) ml.textContent = currentProfile.laps_completed ?? 0
     if (mt) mt.textContent = currentProfile.skip_tickets ?? 0
     if (ma) renderAvEl(ma, currentProfile)
-    // Mobile banked stars
     const bankedArr = Array.isArray(currentProfile.banked_tasks) ? currentProfile.banked_tasks : []
     for (let i = 0; i < 3; i++) {
       const s = document.getElementById('mob-star-' + i)
       if (s) s.classList.toggle('filled', i < bankedArr.length)
     }
-    // Mobile advance/skip in peek bar
+    // Mobile advance/skip
     const isDone    = (currentProfile.space_tasks_completed || 0) >= 1
     const hasTicket = (currentProfile.skip_tickets || 0) > 0
     const mba = document.getElementById('mobile-btn-advance')
@@ -1478,34 +1488,98 @@
     if (mbs) mbs.disabled = !hasTicket
   }
 
-  function toggleMobileTaskBar() {
-    document.getElementById('mobile-task-bar')?.classList.toggle('open')
+  // ── Mobile tab navigation ──
+  let currentMobTab = 'board'
+
+  function mobNav(tab) {
+    currentMobTab = tab
+
+    // Update tab bar
+    document.querySelectorAll('.mob-tab').forEach(t => t.classList.remove('active'))
+    document.getElementById('mobtab-' + tab)?.classList.add('active')
+
+    // Show/hide panels
+    document.querySelectorAll('.mob-panel').forEach(p => p.classList.remove('active'))
+    if (tab !== 'board') {
+      document.getElementById('mob-panel-' + tab)?.classList.add('active')
+    }
+
+    // Floating player card only on board tab
+    const card = document.getElementById('mobile-player-card')
+    if (card) card.style.display = tab === 'board' ? 'block' : 'none'
+
+    // If tasks tab — sync content
+    if (tab === 'tasks') syncMobileTasks()
+    if (tab === 'players') syncMobilePlayers()
+    if (tab === 'admin') {
+      // Return to admin panel
+      exitStaffView()
+    }
   }
 
-  // Close task bar when move forward is pressed (let board animation show)
-  function closeMobileTaskBar() {
-    document.getElementById('mobile-task-bar')?.classList.remove('open')
-  }
-
-  function syncMobileBanner() {
+  function syncMobileTasks() {
     const s = boardSpaces.find(sp => sp.position === (currentProfile.current_space || 1))
     if (!s) return
-    // Update peek bar colour pip and label
-    const pip = document.getElementById('mob-space-pip')
-    const lbl = document.getElementById('mob-bar-label')
-    const sts = document.getElementById('mob-bar-status')
-    const LABELS = { green:'Green Space', blue:'Blue Space', red:'Red Space' }
-    if (pip) pip.className = `mob-space-pip ${s.colour}`
-    if (lbl) lbl.textContent = LABELS[s.colour] || 'Tasks'
-    const isDone = (currentProfile.space_tasks_completed || 0) >= 1
-    if (sts) {
-      sts.textContent = isDone ? '✓ Done' : 'Tap for tasks'
-      sts.style.color = isDone ? 'var(--green)' : 'var(--grey)'
-    }
-    // Mirror task body into bottom bar
+    // Banner
+    const banner = document.getElementById('mob-space-banner')
+    if (banner) banner.className = `space-banner ${s.colour}`
+    const bi = document.getElementById('mob-banner-icon')
+    const bt = document.getElementById('mob-banner-title')
+    const bs = document.getElementById('mob-banner-sub')
+    if (bi) bi.textContent = SPACE_ICONS[s.colour]
+    if (bt) bt.textContent = SPACE_LABELS[s.colour]
+    if (bs) bs.textContent = SPACE_DESCS[s.colour]
+    // Mirror task body
     const src  = document.getElementById('task-panel-body')
     const dest = document.getElementById('mobile-task-body')
     if (src && dest) dest.innerHTML = src.innerHTML
+  }
+
+  function syncMobilePlayers() {
+    const list = document.getElementById('mob-players-list')
+    if (!list) return
+    list.innerHTML = ''
+    const sorted = [...allPlayers].sort((a,b) => (b.laps_completed||0) - (a.laps_completed||0) || (a.current_space||1) - (b.current_space||1))
+    sorted.forEach((p, rank) => {
+      const sc    = boardSpaces.find(sp => sp.position === (p.current_space||1))?.colour || 'green'
+      const isMe  = p.id === currentProfile.id
+      const canViewHistory = currentProfile?.role === 'admin' || currentProfile?.role === 'supervisor'
+      const row   = document.createElement('div')
+      row.className = 'player-row'
+      row.style.cssText = 'padding:0.6rem 0;border-bottom:1px solid rgba(255,255,255,0.06);'
+      row.innerHTML = `
+        <div style="width:22px;font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:0.85rem;color:var(--grey);flex-shrink:0;">${rank+1}</div>
+        <div class="cdot ${sc}" style="flex-shrink:0;"></div>
+        <div class="av sm" style="flex-shrink:0;"></div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:600;font-size:0.88rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${canViewHistory
+              ? `<a href="#" style="color:inherit;text-decoration:none;" onclick="event.preventDefault();showPlayerHistory('${p.id}','${p.display_name.replace(/'/g,"\'")}');">${p.display_name}</a>`
+              : p.display_name}
+            ${isMe ? '<span style="color:var(--red);font-size:0.65rem;"> YOU</span>' : ''}
+          </div>
+          <div style="font-size:0.72rem;color:var(--grey);">Space ${p.current_space||1} · ${p.laps_completed||0} laps</div>
+        </div>
+      `
+      renderAvEl(row.querySelector('.av'), p)
+      list.appendChild(row)
+    })
+  }
+
+  // Close tasks panel and go to board when moving (so animation is visible)
+  function closeMobileTaskBar() {
+    mobNav('board')
+  }
+
+  function syncMobileBanner() {
+    // Called from renderSpaceBanner — sync if tasks tab is open
+    if (currentMobTab === 'tasks') syncMobileTasks()
+  }
+
+  // Show admin tab button for supervisors/admins in staff view
+  function updateMobAdminTab() {
+    const tab = document.getElementById('mobtab-admin')
+    if (tab) tab.style.display = isSupervisorOrAbove() ? 'flex' : 'none'
   }
 
   // ════════════════════════════════
@@ -2671,17 +2745,8 @@
       ? `🎟 Skip (${currentProfile.skip_tickets} left)`
       : '🎟 No Tickets'
 
-    // Mirror task content to mobile task bar
-    const mobileDest = document.getElementById('mobile-task-body')
-    const mobileSrc  = document.getElementById('task-panel-body')
-    if (mobileDest && mobileSrc) mobileDest.innerHTML = mobileSrc.innerHTML
-
-    // Sync mobile peek bar status
-    const mobStatus = document.getElementById('mob-bar-status')
-    if (mobStatus) {
-      mobStatus.textContent  = isDone ? '✓ Done' : 'Tap for tasks'
-      mobStatus.style.color  = isDone ? 'var(--green)' : 'var(--grey)'
-    }
+    // Sync mobile task panel if it's open
+    if (currentMobTab === 'tasks') syncMobileTasks()
     const mobAdv = document.getElementById('mobile-btn-advance')
     const mobSkp = document.getElementById('mobile-btn-skip')
     if (mobAdv) mobAdv.disabled = !isDone
@@ -4519,7 +4584,6 @@ Currently on space ${currentSpace}`)
   function enterStaffView() {
     document.getElementById('staff-view-label').textContent = '👀 Viewing as Staff — changes are real!'
     document.getElementById('staff-view-banner').style.display = 'flex'
-    document.body.classList.add('staff-banner-visible')
     initGame()
   }
 
@@ -4541,7 +4605,6 @@ Currently on space ${currentSpace}`)
     document.getElementById('staff-view-label').textContent =
       `👤 Possessing ${target.display_name} — all actions affect their account!`
     document.getElementById('staff-view-banner').style.display = 'flex'
-    document.body.classList.add('staff-banner-visible')
     await initGame()
   }
 
@@ -4555,7 +4618,6 @@ Currently on space ${currentSpace}`)
       possessedPlayerId  = null
     }
     document.getElementById('staff-view-banner').style.display = 'none'
-    document.body.classList.remove('staff-banner-visible')
     showPage('admin')
     initAdmin()
   }
