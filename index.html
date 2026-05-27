@@ -218,6 +218,7 @@
       position: absolute; top: 0; left: 0;
       transform-origin: 0 0;
       will-change: transform;
+      width: 100%;
     }
     .board-canvas.smooth { transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1); }
 
@@ -1413,72 +1414,72 @@
   // ════════════════════════════════
   //  BOARD CAMERA & NAVIGATION
   // ════════════════════════════════
+  // All coordinates are in SVG logical units (viewBox space).
+  // We calculate a base scale (svgNativeScale) that maps viewBox units → canvas pixels
+  // at scale=1, then cameraScale multiplies on top of that.
+  // This way all maths is stable and repeatable regardless of DOM state.
 
-  function getCameraTransform(x, y, scale) {
-    return `translate(${x}px, ${y}px) scale(${scale})`
+  function getSvgNativeScale() {
+    // The SVG canvas div has a known pixel width (viewport width).
+    // boardSvgW is the viewBox width. Native scale = canvas_px / viewBox_units.
+    const canvas = document.getElementById('board-canvas')
+    if (!canvas) return 1
+    return canvas.clientWidth / boardSvgW || 1
   }
 
   function applyCamera(animate = true) {
     const canvas = document.getElementById('board-canvas')
     if (!canvas) return
-    if (animate) {
-      canvas.classList.add('smooth')
-    } else {
-      canvas.classList.remove('smooth')
-    }
-    canvas.style.transform = getCameraTransform(cameraX, cameraY, cameraScale)
+    if (animate) canvas.classList.add('smooth')
+    else canvas.classList.remove('smooth')
+    canvas.style.transform = `translate(${cameraX}px, ${cameraY}px) scale(${cameraScale})`
   }
 
-  function boardFocusPosition(posIdx, animate = true, scale = 2.8) {
+  // Focus on a logical SVG position (in viewBox units)
+  function focusOnPoint(lx, ly, scale, animate = true) {
     const viewport = document.getElementById('board-viewport')
-    const canvas   = document.getElementById('board-canvas')
-    const svg      = document.getElementById('board-svg')
-    if (!viewport || !canvas || !boardPositions[posIdx]) return
-
+    if (!viewport) return
     const vw = viewport.clientWidth
     const vh = viewport.clientHeight
-
-    // The SVG has a viewBox — get how it maps to actual pixels
-    const svgRect = svg.getBoundingClientRect()
-    const vbW     = parseFloat(svg.getAttribute('viewBox')?.split(' ')[2]) || boardSvgW
-    const vbH     = parseFloat(svg.getAttribute('viewBox')?.split(' ')[3]) || boardSvgH
-    const vbOffY  = parseFloat(svg.getAttribute('viewBox')?.split(' ')[1]) || 0
-    const pixPerVbu = svgRect.width / vbW   // pixels per viewBox unit
-
-    const pos = boardPositions[posIdx]
-    // Convert logical SVG coords to canvas-relative pixels
-    const px = pos.x * pixPerVbu
-    const py = (pos.y - vbOffY) * pixPerVbu
-
+    const ns = getSvgNativeScale()   // canvas px per viewBox unit at scale=1
+    // Position after applying cameraScale:
+    //   screen_x = cameraX + lx * ns * scale
+    // We want screen_x = vw/2, so:
     cameraScale = scale
-    cameraX = vw / 2 - px * scale
-    cameraY = vh / 2 - py * scale
-
-    boardFocusIdx = posIdx
+    cameraX = vw / 2 - lx * ns * scale
+    cameraY = vh / 2 - ly * ns * scale
     applyCamera(animate)
+  }
+
+  function boardFocusPosition(posIdx, animate = true, scale = 3) {
+    if (!boardPositions[posIdx]) return
+    const pos = boardPositions[posIdx]
+    // Adjust for viewBox y offset (badge overhang shifts y by -50)
+    const vbParts = document.getElementById('board-svg')?.getAttribute('viewBox')?.split(' ') || []
+    const vbOffY  = parseFloat(vbParts[1]) || 0
+    focusOnPoint(pos.x, pos.y - vbOffY, scale, animate)
+    boardFocusIdx = posIdx
   }
 
   function boardZoomOut(animate = true) {
     const viewport = document.getElementById('board-viewport')
-    const svg      = document.getElementById('board-svg')
-    if (!viewport || !svg) return
+    const canvas   = document.getElementById('board-canvas')
+    if (!viewport || !canvas) return
 
     const vw = viewport.clientWidth
     const vh = viewport.clientHeight
+    const ns = getSvgNativeScale()
 
-    const svgRect  = svg.getBoundingClientRect()
-    const svgW     = svgRect.width  || vw
-    const svgH     = svgRect.height || vh
+    // Full SVG logical size in canvas pixels at scale=1
+    const vbParts = document.getElementById('board-svg')?.getAttribute('viewBox')?.split(' ') || []
+    const vbH     = parseFloat(vbParts[3]) || boardSvgH
+    const svgPxW  = boardSvgW * ns
+    const svgPxH  = vbH * ns
 
-    // Scale so the full SVG fits inside the viewport with padding
-    const scaleX = (vw * 0.95) / svgW
-    const scaleY = (vh * 0.95) / svgH
-    cameraScale  = Math.min(scaleX, scaleY)
-
-    // Centre it
-    cameraX = (vw - svgW * cameraScale) / 2
-    cameraY = (vh - svgH * cameraScale) / 2
-
+    const scale = Math.min((vw * 0.95) / svgPxW, (vh * 0.95) / svgPxH)
+    cameraScale = scale
+    cameraX     = (vw - svgPxW * scale) / 2
+    cameraY     = (vh - svgPxH * scale) / 2
     boardFocusIdx = -1
     document.getElementById('board-nav-label').textContent = 'Full Board'
     applyCamera(animate)
@@ -1488,12 +1489,10 @@
     const mySpace = currentProfile?.current_space || 1
     const idx     = mySpace - 1
     if (boardPositions[idx]) {
-      boardFocusPosition(idx, !instant, 2.8)
-      const spaceData = boardSpaces[idx]
-      const colour    = spaceData?.colour || 'green'
+      boardFocusPosition(idx, !instant, 3)
+      const colour = boardSpaces[idx]?.colour || 'green'
       document.getElementById('board-nav-label').textContent = `Space ${mySpace} · ${colour}`
     } else {
-      // Positions not ready — show full board
       boardZoomOut(!instant)
     }
     document.getElementById('btn-my-space')?.classList.add('active')
@@ -1504,25 +1503,20 @@
     const next    = dir === 'next'
       ? Math.min(current + 1, boardPositions.length - 1)
       : Math.max(current - 1, 0)
-    boardFocusPosition(next)
-    const spaceNum  = next + 1
-    const spaceData = boardSpaces[next]
-    document.getElementById('board-nav-label').textContent = `Space ${spaceNum} · ${spaceData?.colour || ''}`
+    boardFocusPosition(next, true, 3)
+    document.getElementById('board-nav-label').textContent = `Space ${next + 1} · ${boardSpaces[next]?.colour || ''}`
     document.getElementById('btn-my-space')?.classList.remove('active')
   }
 
   function boardNavPlayer(dir) {
-    const staffPlayers = allPlayers.filter(p => p.role === 'staff' || p.role === 'supervisor')
-    if (!staffPlayers.length) return
-    if (dir === 'next') boardPlayerIdx = (boardPlayerIdx + 1) % staffPlayers.length
-    else boardPlayerIdx = (boardPlayerIdx - 1 + staffPlayers.length) % staffPlayers.length
-
-    const player = staffPlayers[boardPlayerIdx]
+    const players = allPlayers.filter(p => p.role === 'staff' || p.role === 'supervisor')
+    if (!players.length) return
+    if (dir === 'next') boardPlayerIdx = (boardPlayerIdx + 1) % players.length
+    else boardPlayerIdx = (boardPlayerIdx - 1 + players.length) % players.length
+    const player   = players[boardPlayerIdx]
     const spaceIdx = (player.current_space || 1) - 1
-    if (boardPositions[spaceIdx]) {
-      boardFocusPosition(spaceIdx)
-      document.getElementById('board-nav-label').textContent = `${player.display_name} · Space ${player.current_space || 1}`
-    }
+    boardFocusPosition(spaceIdx, true, 3)
+    document.getElementById('board-nav-label').textContent = `${player.display_name} · Space ${player.current_space || 1}`
     document.getElementById('btn-my-space')?.classList.remove('active')
   }
 
