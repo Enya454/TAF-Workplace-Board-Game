@@ -522,65 +522,7 @@
 
     .tasks-empty { text-align: center; padding: 1.25rem; color: var(--grey); font-size: 0.82rem; }
 
-    /* ── Dev panel ── */
-    .dev-fab {
-      position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 400;
-      width: 44px; height: 44px; border-radius: 50%;
-      background: #333; border: 1px solid rgba(255,255,255,0.2);
-      color: #fff; font-size: 1.1rem; cursor: pointer;
-      display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-      transition: background 0.2s;
-    }
-    .dev-fab:hover { background: #444; }
-
-    .dev-panel {
-      position: fixed; bottom: 5.5rem; right: 1.5rem; z-index: 400;
-      background: var(--dark-2); border: 1px solid rgba(255,255,255,0.12);
-      border-radius: var(--radius); padding: 1rem;
-      width: 240px; box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-      display: none; flex-direction: column; gap: 0.75rem;
-      animation: slideUp 0.2s cubic-bezier(0.16,1,0.3,1);
-    }
-    .dev-panel.open { display: flex; }
-    .dev-panel-title {
-      font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
-      font-size: 0.8rem; letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--grey); display: flex; justify-content: space-between; align-items: center;
-    }
-    .dev-panel-title span { color: #f59e0b; }
-    .dev-row { display: flex; gap: 0.5rem; }
-    .dev-input {
-      flex: 1; background: var(--dark-3); border: 1px solid rgba(255,255,255,0.08);
-      border-radius: var(--radius-sm); color: #fff; font-family: 'Barlow', sans-serif;
-      font-size: 0.85rem; padding: 0.45rem 0.7rem; outline: none;
-    }
-    .dev-input:focus { border-color: #f59e0b; }
-    .dev-input::placeholder { color: #555; }
-    .dev-btn {
-      background: #f59e0b; color: #000; border: none; border-radius: var(--radius-sm);
-      font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.85rem;
-      letter-spacing: 0.05em; text-transform: uppercase; padding: 0.45rem 0.75rem;
-      cursor: pointer; white-space: nowrap;
-    }
-    .dev-btn:hover { background: #d97706; }
-    .dev-btn-ghost {
-      background: transparent; color: #f59e0b; border: 1px solid rgba(245,158,11,0.3);
-      border-radius: var(--radius-sm); font-family: 'Barlow Condensed', sans-serif;
-      font-weight: 700; font-size: 0.8rem; letter-spacing: 0.05em; text-transform: uppercase;
-      padding: 0.4rem 0.75rem; cursor: pointer; width: 100%;
-    }
-    .dev-btn-ghost:hover { background: rgba(245,158,11,0.08); }
-    .dev-test-players { display: flex; flex-direction: column; gap: 0.3rem; max-height: 140px; overflow-y: auto; }
-    .dev-player-row {
-      display: flex; align-items: center; gap: 0.5rem;
-      background: var(--dark-3); border-radius: var(--radius-sm); padding: 0.3rem 0.5rem;
-      font-size: 0.78rem;
-    }
-    .dev-player-name { flex: 1; font-weight: 600; }
-    .dev-player-space { color: #f59e0b; font-family: 'Barlow Condensed', sans-serif; font-weight: 800; }
-    .dev-player-remove { background: none; border: none; color: var(--grey); cursor: pointer; font-size: 0.9rem; padding: 0; }
-    .dev-player-remove:hover { color: var(--red); }
+    /* Dev panel removed */
 
     /* ── Space tooltip (hover popup) ── */
     .space-tooltip {
@@ -818,21 +760,7 @@
   </div>
 </div>
 
-<!-- ══ DEV PANEL ══ -->
-<div id="dev-panel" class="dev-panel">
-  <div class="dev-panel-title">
-    <span>🧪 Test Players</span>
-    <span style="color:var(--grey);font-size:0.7rem;font-weight:400;">not saved</span>
-  </div>
-  <div class="dev-row">
-    <input class="dev-input" id="dev-name" placeholder="Name" />
-    <input class="dev-input" id="dev-space" placeholder="Space" type="number" min="1" max="40" style="width:60px;flex:none;" />
-  </div>
-  <button class="dev-btn" onclick="addTestPlayer()">+ Add Player</button>
-  <div class="dev-test-players" id="dev-players-list"></div>
-  <button class="dev-btn-ghost" onclick="clearTestPlayers()">Clear All Test Players</button>
-</div>
-<button class="dev-fab" id="dev-fab" onclick="toggleDevPanel()" title="Test players">🧪</button>
+
 
 <!-- ══ BANK TASK MODAL ══ -->
 <div id="bank-modal" style="display:none;">
@@ -901,10 +829,7 @@
   function showPage(n) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
     document.getElementById('page-' + n).classList.add('active')
-    const fab = document.getElementById('dev-fab')
-    const panel = document.getElementById('dev-panel')
-    if (fab) fab.style.display = n === 'game' ? 'flex' : 'none'
-    if (panel && n !== 'game') panel.classList.remove('open')
+
   }
   function hideLoader() { document.getElementById('page-loader').style.display = 'none' }
   function setAlert(id, msg, type = 'error') {
@@ -1732,46 +1657,101 @@
   async function adminRenderPlayers() {
     const { data: players } = await sb.from('profiles').select('*').eq('role','staff').order('laps_completed',{ascending:false})
     const { data: spaces }  = await sb.from('board_spaces').select('*').order('position')
-    const content = document.getElementById('admin-content')
+    const el = document.getElementById('admin-content')
 
-    let rows = (players||[]).map(p => {
+    const realPlayers = (players||[]).filter(p => !p.is_test)
+    const testAccounts = (players||[]).filter(p => p.is_test)
+
+    const makeRows = (list) => list.map(p => {
       const sc     = (spaces||[]).find(s => s.position === (p.current_space||1))?.colour || 'green'
       const banked = Array.isArray(p.banked_tasks) ? p.banked_tasks : []
       const avUrl  = p.avatar && p.avatar.startsWith('http') ? p.avatar : null
       const avHtml = avUrl
         ? `<img src="${avUrl}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(255,255,255,0.15);">`
         : `<div style="width:28px;height:28px;border-radius:50%;background:${stringToColour(p.id||p.display_name)};display:inline-flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:700;">${initials(p.display_name)}</div>`
+      const testBadge = p.is_test ? '<span class="pill pill-red" style="margin-left:0.4rem;">Test</span>' : ''
       return `<tr>
         <td>${avHtml}</td>
-        <td><strong>${p.display_name}</strong><br><span style="font-size:0.72rem;color:var(--grey);">${p.employee_number||''}</span></td>
+        <td><strong>${p.display_name}</strong>${testBadge}<br><span style="font-size:0.72rem;color:var(--grey);">${p.employee_number||''}</span></td>
         <td><span class="pill pill-${sc === 'green' ? 'green' : sc === 'blue' ? 'blue' : 'red'}">Space ${p.current_space||1} · ${sc}</span></td>
         <td>${p.laps_completed||0}</td>
-        <td>${p.skip_tickets||0}
-          <button class="btn-xs btn-xs-green" style="margin-left:0.4rem;" onclick="adminAwardTicket('${p.id}','${p.display_name}',${p.skip_tickets||0})">+</button>
+        <td>
+          <span id="tickets-${p.id}">${p.skip_tickets||0}</span>
+          <button class="btn-xs btn-xs-green" style="margin-left:0.3rem;" onclick="adminAwardTicket('${p.id}','${p.display_name}',${p.skip_tickets||0})">+</button>
+          <button class="btn-xs btn-xs-red" style="margin-left:0.2rem;" onclick="adminRemoveTicket('${p.id}','${p.display_name}',${p.skip_tickets||0})">−</button>
         </td>
         <td>${banked.length}/3
           ${banked.length > 0 ? `<button class="btn-xs btn-xs-grey" style="margin-left:0.4rem;" onclick="adminEditBanked('${p.id}','${p.display_name}')">Edit</button>` : ''}
         </td>
-        <td>
+        <td style="display:flex;gap:0.3rem;flex-wrap:wrap;">
           <button class="btn-xs btn-xs-blue" onclick="adminMovePlayer('${p.id}','${p.display_name}',${p.current_space||1})">Move</button>
+          <button class="btn-xs btn-xs-grey" onclick="adminResetPlayer('${p.id}','${p.display_name}')">Reset</button>
+          ${p.is_test ? `<button class="btn-xs btn-xs-red" onclick="adminDeleteTestAccount('${p.id}','${p.display_name}')">Delete</button>` : ''}
         </td>
       </tr>`
     }).join('')
 
-    content.innerHTML = `
+    el.innerHTML = `
       <div class="admin-section">
         <div class="admin-section-header">
-          <div class="admin-section-title">All Staff (${(players||[]).length})</div>
+          <div class="admin-section-title">🧪 Create Test Account</div>
+        </div>
+        <div class="admin-section-body">
+          <p style="font-size:0.82rem;color:var(--grey-light);">Creates a real staff account flagged as a test. You can log in with it to try features like skip tickets.</p>
+          <div class="admin-form-row">
+            <div class="admin-field">
+              <label>Display Name</label>
+              <input class="admin-input" id="test-name" placeholder="e.g. Test User 1" />
+            </div>
+            <div class="admin-field">
+              <label>Email</label>
+              <input class="admin-input" id="test-email" type="email" placeholder="test@yourstore.com" />
+            </div>
+            <div class="admin-field" style="max-width:140px;">
+              <label>Password</label>
+              <input class="admin-input" id="test-password" type="text" placeholder="testpass123" />
+            </div>
+          </div>
+          <div class="admin-form-row">
+            <div class="admin-field" style="max-width:160px;">
+              <label>Starting Space</label>
+              <input class="admin-input" id="test-space" type="number" placeholder="1" min="1" max="40" value="1" />
+            </div>
+            <div class="admin-field" style="max-width:140px;">
+              <label>Skip Tickets</label>
+              <input class="admin-input" id="test-tickets" type="number" placeholder="0" min="0" value="0" />
+            </div>
+            <button class="btn btn-red" style="align-self:flex-end;" onclick="adminCreateTestAccount()">+ Create Test Account</button>
+          </div>
+          <div id="test-account-alert"></div>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <div class="admin-section-title">All Staff (${realPlayers.length})</div>
         </div>
         <div style="overflow-x:auto;">
           <table class="admin-table">
-            <thead><tr>
-              <th></th><th>Name</th><th>Position</th><th>Laps</th><th>Skip Tickets</th><th>Banked</th><th>Actions</th>
-            </tr></thead>
-            <tbody>${rows || '<tr><td colspan="7" style="text-align:center;color:var(--grey);padding:2rem;">No staff yet</td></tr>'}</tbody>
+            <thead><tr><th></th><th>Name</th><th>Position</th><th>Laps</th><th>Skip Tickets</th><th>Banked</th><th>Actions</th></tr></thead>
+            <tbody>${makeRows(realPlayers) || '<tr><td colspan="7" style="text-align:center;color:var(--grey);padding:2rem;">No staff yet</td></tr>'}</tbody>
           </table>
         </div>
-      </div>`
+      </div>
+
+      ${testAccounts.length > 0 ? `
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <div class="admin-section-title">🧪 Test Accounts (${testAccounts.length})</div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr><th></th><th>Name</th><th>Position</th><th>Laps</th><th>Skip Tickets</th><th>Banked</th><th>Actions</th></tr></thead>
+            <tbody>${makeRows(testAccounts)}</tbody>
+          </table>
+        </div>
+      </div>` : ''}
+    `
   }
 
   async function adminAwardTicket(playerId, name, current) {
@@ -1787,6 +1767,82 @@ Currently on space ${currentSpace}`)
     const space = parseInt(input)
     if (isNaN(space) || space < 1 || space > (boardConfig.total_spaces||40)) { alert('Invalid space number.'); return }
     await sb.from('profiles').update({ current_space: space, space_tasks_completed: 0 }).eq('id', playerId)
+    adminRenderPlayers()
+  }
+
+  async function adminRemoveTicket(playerId, name, current) {
+    if (current < 1) { alert(`${name} has no skip tickets to remove.`); return }
+    if (!confirm(`Remove 1 skip ticket from ${name}?`)) return
+    await sb.from('profiles').update({ skip_tickets: current - 1 }).eq('id', playerId)
+    adminRenderPlayers()
+  }
+
+  async function adminResetPlayer(playerId, name) {
+    if (!confirm(`Reset ${name} back to space 1 with 0 laps and 0 tasks completed? Their banked tasks and skip tickets will be kept.`)) return
+    await sb.from('profiles').update({ current_space: 1, laps_completed: 0, space_tasks_completed: 0 }).eq('id', playerId)
+    adminRenderPlayers()
+  }
+
+  async function adminCreateTestAccount() {
+    const name     = document.getElementById('test-name').value.trim()
+    const email    = document.getElementById('test-email').value.trim()
+    const password = document.getElementById('test-password').value.trim()
+    const space    = parseInt(document.getElementById('test-space').value) || 1
+    const tickets  = parseInt(document.getElementById('test-tickets').value) || 0
+
+    if (!name || !email || !password) { setAlert('test-account-alert', 'Please fill in name, email and password.'); return }
+    if (password.length < 6) { setAlert('test-account-alert', 'Password must be at least 6 characters.'); return }
+
+    setAlert('test-account-alert', '')
+
+    // Use a fake employee number for test accounts
+    const fakeEmpNum = 'TEST-' + Date.now()
+    await sb.from('employee_numbers').insert({ employee_number: fakeEmpNum, is_used: false })
+
+    // Sign up via Supabase auth
+    const { data, error } = await sb.auth.signUp({
+      email,
+      password,
+      options: { data: { display_name: name, employee_number: fakeEmpNum } }
+    })
+
+    if (error) { setAlert('test-account-alert', error.message); return }
+
+    // Insert profile directly (bypass email confirmation)
+    const { error: profErr } = await sb.from('profiles').insert({
+      id:            data.user.id,
+      display_name:  name,
+      employee_number: fakeEmpNum,
+      role:          'staff',
+      is_test:       true,
+      current_space: space,
+      skip_tickets:  tickets,
+      laps_completed: 0,
+      space_tasks_completed: 0,
+      banked_tasks:  []
+    })
+
+    await sb.from('employee_numbers').update({ is_used: true }).eq('employee_number', fakeEmpNum)
+
+    if (profErr) { setAlert('test-account-alert', profErr.message); return }
+
+    setAlert('test-account-alert',
+      `✓ Test account created! Email: ${email} · Password: ${password} · Starting space: ${space}`,
+      'success')
+
+    document.getElementById('test-name').value     = ''
+    document.getElementById('test-email').value    = ''
+    document.getElementById('test-password').value = ''
+    document.getElementById('test-space').value    = '1'
+    document.getElementById('test-tickets').value  = '0'
+
+    adminRenderPlayers()
+  }
+
+  async function adminDeleteTestAccount(playerId, name) {
+    if (!confirm(`Permanently delete test account "${name}"? This cannot be undone.`)) return
+    await sb.from('profiles').delete().eq('id', playerId)
+    // Note: auth user remains but is harmless without a profile
     adminRenderPlayers()
   }
 
@@ -2108,88 +2164,7 @@ Currently on space ${currentSpace}`)
     initAdmin()
   }
 
-  // ════════════════════════════════
-  //  DEV TEST PLAYERS
-  // ════════════════════════════════
-  const TEST_NAMES = ['Alex','Jordan','Sam','Riley','Taylor','Morgan','Casey','Avery','Quinn','Blake']
-  let testPlayers = []
 
-  function toggleDevPanel() {
-    const panel = document.getElementById('dev-panel')
-    panel.classList.toggle('open')
-  }
-
-  function addTestPlayer() {
-    const nameInput  = document.getElementById('dev-name')
-    const spaceInput = document.getElementById('dev-space')
-    const name  = nameInput.value.trim() || TEST_NAMES[Math.floor(Math.random() * TEST_NAMES.length)]
-    const space = Math.min(40, Math.max(1, parseInt(spaceInput.value) || Math.ceil(Math.random() * 40)))
-
-    const fake = {
-      id: 'test-' + Date.now() + Math.random(),
-      display_name: name,
-      current_space: space,
-      laps_completed: 0,
-      skip_tickets: 0,
-      banked_tasks: [],
-      avatar: null,
-      role: 'staff',
-      _isTest: true
-    }
-
-    testPlayers.push(fake)
-    allPlayers.push(fake)
-    nameInput.value  = ''
-    spaceInput.value = ''
-    renderDevPlayersList()
-    renderBoard()
-    renderSidePanel()
-  }
-
-  function removeTestPlayer(id) {
-    testPlayers   = testPlayers.filter(p => p.id !== id)
-    allPlayers    = allPlayers.filter(p => p.id !== id)
-    renderDevPlayersList()
-    renderBoard()
-    renderSidePanel()
-  }
-
-  function clearTestPlayers() {
-    testPlayers = []
-    allPlayers  = allPlayers.filter(p => !p._isTest)
-    renderDevPlayersList()
-    renderBoard()
-    renderSidePanel()
-  }
-
-  function renderDevPlayersList() {
-    const list = document.getElementById('dev-players-list')
-    list.innerHTML = ''
-    if (testPlayers.length === 0) {
-      list.innerHTML = '<div style="font-size:0.75rem;color:var(--grey);text-align:center;padding:0.4rem;">No test players yet</div>'
-      return
-    }
-    testPlayers.forEach(p => {
-      const row = document.createElement('div')
-      row.className = 'dev-player-row'
-      row.innerHTML = `
-        <div class="dev-player-name">${p.display_name}</div>
-        <div class="dev-player-space">Space ${p.current_space}</div>
-        <button class="dev-player-remove" onclick="removeTestPlayer('${p.id}')">✕</button>
-      `
-      list.appendChild(row)
-    })
-  }
-
-  // Allow pressing Enter in dev inputs
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('dev-space')?.addEventListener('keydown', e => {
-      if (e.key === 'Enter') addTestPlayer()
-    })
-    document.getElementById('dev-name')?.addEventListener('keydown', e => {
-      if (e.key === 'Enter') addTestPlayer()
-    })
-  })
 
   // ════════════════════════════════
   //  CELEBRATION
