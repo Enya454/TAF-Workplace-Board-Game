@@ -1266,29 +1266,35 @@
     const R     = 28
     const AV    = 10
     const MAX_VISIBLE = 3
-    const PAD   = 44
+    const PAD   = 60
     const WIDTH = 720
     const COLS  = 8
     const AMP   = 70
 
-    // Check if spaces have custom x/y positions stored
-    const hasCustomPositions = boardSpaces.some(s => s.x !== null && s.x !== undefined)
+    // Custom positions are stored as 0..1 ratios of the editor canvas
+    // We need to re-normalise them to fit the SVG, using the same
+    // bounding-box stretch approach the editor uses
+    const hasCustomPositions = boardSpaces.some(s => s.x != null && s.x !== undefined)
 
     let positions = []
     let svgH
 
     if (hasCustomPositions) {
-      // Use stored positions — scale from 0..1 to SVG coordinates
-      // Find bounding box of stored positions
+      // boardSpaces[].x and .y are 0..1 normalised from the editor canvas
       const xs = boardSpaces.map(s => s.x ?? 0.5)
       const ys = boardSpaces.map(s => s.y ?? 0.5)
       const minX = Math.min(...xs), maxX = Math.max(...xs)
       const minY = Math.min(...ys), maxY = Math.max(...ys)
-      const rangeX = maxX - minX || 1
-      const rangeY = maxY - minY || 1
+      const rangeX = (maxX - minX) || 1
+      const rangeY = (maxY - minY) || 1
+
+      // Scale to fill the SVG width, then derive height to preserve aspect ratio
+      // Enforce a minimum height so the board never looks squashed
       const drawW = WIDTH - PAD * 2
-      const drawH = Math.max(500, Math.round(drawW * (rangeY / rangeX)))
+      const naturalH = drawW * (rangeY / rangeX)
+      const drawH = Math.max(naturalH, 400)
       svgH = drawH + PAD * 2
+
       positions = boardSpaces.map(s => ({
         x: PAD + ((s.x ?? 0.5) - minX) / rangeX * drawW,
         y: PAD + ((s.y ?? 0.5) - minY) / rangeY * drawH
