@@ -74,7 +74,8 @@
 
     /* ── Role badge ── */
     .role-badge { display: inline-block; background: rgba(0,87,168,0.2); border: 1px solid rgba(0,87,168,0.4); color: #60aaff; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 99px; }
-    .role-badge.admin { background: rgba(232,17,45,0.15); border-color: rgba(232,17,45,0.35); color: #ff7088; }
+    .role-badge.admin      { background: rgba(232,17,45,0.15); border-color: rgba(232,17,45,0.35); color: #ff7088; }
+    .role-badge.supervisor { background: rgba(245,158,11,0.15); border-color: rgba(245,158,11,0.35); color: #fbbf24; }
 
     /* ════════════════════════════
        GAME LAYOUT
@@ -1125,7 +1126,7 @@
     hideLoader()
     if (!profile) { showPage('login'); return }
     currentProfile = profile
-    if (profile.role === 'admin') {
+    if (profile.role === 'admin' || profile.role === 'supervisor') {
       document.getElementById('admin-welcome').textContent = `Signed in as ${profile.display_name}`
       showPage('admin')
       await initAdmin()
@@ -1213,7 +1214,7 @@
 
     // Only show staff + admins who have opted in to appear on the board
     allPlayers = (playersRes.data || []).filter(p =>
-      p.role === 'staff' || (p.role === 'admin' && p.appear_on_board)
+      p.role === 'staff' || p.role === 'supervisor' || (p.role === 'admin' && p.appear_on_board)
     )
 
     renderNav()
@@ -1228,7 +1229,7 @@
   async function refreshPlayers() {
     const { data } = await sb.from('profiles').select('*').order('laps_completed',{ascending:false})
     allPlayers = (data || []).filter(p =>
-      p.role === 'staff' || (p.role === 'admin' && p.appear_on_board)
+      p.role === 'staff' || p.role === 'supervisor' || (p.role === 'admin' && p.appear_on_board)
     )
     renderBoard()
     renderSidePanel()
@@ -2058,8 +2059,21 @@
   let adminSection = 'players'
   let isStaffView  = false
 
+  const isAdmin = () => currentProfile?.role === 'admin'
+  const isSupervisor = () => currentProfile?.role === 'supervisor'
+  const isSupervisorOrAbove = () => ['admin','supervisor'].includes(currentProfile?.role)
+
   async function initAdmin() {
     syncAdminBoardToggle()
+    // Hide sections supervisors can't access
+    const adminOnly = ['board','shape']
+    adminOnly.forEach(sec => {
+      const sidebar = document.getElementById('anav-' + sec)
+      const tab     = document.getElementById('atab-' + sec)
+      const hide    = !isAdmin()
+      if (sidebar) sidebar.style.display = hide ? 'none' : ''
+      if (tab)     tab.style.display     = hide ? 'none' : ''
+    })
     await adminNav('players')
   }
 
@@ -2106,33 +2120,44 @@
     const realPlayers = (players||[]).filter(p => !p.is_test)
     const testAccounts = (players||[]).filter(p => p.is_test)
 
-    const makeRows = (list) => list.map(p => {
+    const makeRows = (list, editable = true) => list.map(p => {
       const sc     = (spaces||[]).find(s => s.position === (p.current_space||1))?.colour || 'green'
       const banked = Array.isArray(p.banked_tasks) ? p.banked_tasks : []
       const avUrl  = p.avatar && p.avatar.startsWith('http') ? p.avatar : null
       const avHtml = avUrl
         ? `<img src="${avUrl}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(255,255,255,0.15);">`
         : `<div style="width:28px;height:28px;border-radius:50%;background:${stringToColour(p.id||p.display_name)};display:inline-flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:700;">${initials(p.display_name)}</div>`
-      const testBadge = p.is_test ? '<span class="pill pill-red" style="margin-left:0.4rem;">Test</span>' : ''
+      const roleBadge = p.role === 'admin' ? '<span class="pill pill-red" style="margin-left:0.3rem;">Admin</span>'
+                      : p.role === 'supervisor' ? '<span class="pill" style="margin-left:0.3rem;background:rgba(245,158,11,0.15);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);">Supervisor</span>' : ''
+      const testBadge = p.is_test ? '<span class="pill pill-red" style="margin-left:0.3rem;">Test</span>' : ''
+
+      // What actions are available depends on viewer role + target role
+      const canEditTickets = editable
+      const canMoveReset   = editable && isSupervisorOrAbove()
+      const canPromote     = editable && isAdmin()
+      const canDelete      = editable && p.is_test
+
       return `<tr>
         <td>${avHtml}</td>
-        <td><strong>${p.display_name}</strong>${testBadge}<br><span style="font-size:0.72rem;color:var(--grey);">${p.employee_number||''}</span></td>
+        <td><strong>${p.display_name}</strong>${roleBadge}${testBadge}<br><span style="font-size:0.72rem;color:var(--grey);">${p.employee_number||''}</span></td>
         <td><span class="pill pill-${sc === 'green' ? 'green' : sc === 'blue' ? 'blue' : 'red'}">Space ${p.current_space||1} · ${sc}</span></td>
         <td>${p.laps_completed||0}</td>
         <td>
-          <span id="tickets-${p.id}">${p.skip_tickets||0}</span>
+          <span>${p.skip_tickets||0}</span>
+          ${canEditTickets ? `
           <button class="btn-xs btn-xs-green" style="margin-left:0.3rem;" onclick="adminAwardTicket('${p.id}','${p.display_name}',${p.skip_tickets||0})">+</button>
-          <button class="btn-xs btn-xs-red" style="margin-left:0.2rem;" onclick="adminRemoveTicket('${p.id}','${p.display_name}',${p.skip_tickets||0})">−</button>
+          <button class="btn-xs btn-xs-red"   style="margin-left:0.2rem;" onclick="adminRemoveTicket('${p.id}','${p.display_name}',${p.skip_tickets||0})">−</button>` : ''}
         </td>
         <td>${banked.length}/3
-          ${banked.length > 0 ? `<button class="btn-xs btn-xs-grey" style="margin-left:0.4rem;" onclick="adminEditBanked('${p.id}','${p.display_name}')">Edit</button>` : ''}
+          ${isAdmin() && banked.length > 0 ? `<button class="btn-xs btn-xs-grey" style="margin-left:0.4rem;" onclick="adminEditBanked('${p.id}','${p.display_name}')">Edit</button>` : ''}
         </td>
         <td style="display:flex;gap:0.3rem;flex-wrap:wrap;">
+          ${canMoveReset ? `
           <button class="btn-xs btn-xs-blue" onclick="adminMovePlayer('${p.id}','${p.display_name}',${p.current_space||1})">Move</button>
-          <button class="btn-xs btn-xs-grey" onclick="adminResetPlayer('${p.id}','${p.display_name}')">Reset</button>
+          <button class="btn-xs btn-xs-grey" onclick="adminResetPlayer('${p.id}','${p.display_name}')">Reset</button>` : ''}
           <button class="btn-xs btn-xs-blue" onclick="adminPossessPlayer('${p.id}')">👤 Possess</button>
-          <button class="btn-xs btn-xs-green" onclick="adminPromotePlayer('${p.id}','${p.display_name}')">⬆️ Promote</button>
-          ${p.is_test ? `<button class="btn-xs btn-xs-red" onclick="adminDeleteTestAccount('${p.id}','${p.display_name}')">Delete</button>` : ''}
+          ${canPromote ? `<button class="btn-xs btn-xs-green" onclick="adminPromotePlayer('${p.id}','${p.display_name}','${p.role}')">⬆️ Promote</button>` : ''}
+          ${canDelete ? `<button class="btn-xs btn-xs-red" onclick="adminDeleteTestAccount('${p.id}','${p.display_name}')">Delete</button>` : ''}
         </td>
       </tr>`
     }).join('')
@@ -2165,12 +2190,37 @@
 
       <div class="admin-section">
         <div class="admin-section-header">
-          <div class="admin-section-title">All Staff (${realPlayers.length})</div>
+          <div class="admin-section-title">Staff (${realPlayers.filter(p=>p.role==='staff').length})</div>
         </div>
         <div style="overflow-x:auto;">
           <table class="admin-table">
             <thead><tr><th></th><th>Name</th><th>Position</th><th>Laps</th><th>Skip Tickets</th><th>Banked</th><th>Actions</th></tr></thead>
-            <tbody>${makeRows(realPlayers) || '<tr><td colspan="7" style="text-align:center;color:var(--grey);padding:2rem;">No staff yet</td></tr>'}</tbody>
+            <tbody>${makeRows(realPlayers.filter(p=>p.role==='staff')) || '<tr><td colspan="7" style="text-align:center;color:var(--grey);padding:2rem;">No staff yet</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>
+
+      ${realPlayers.filter(p=>p.role==='supervisor').length > 0 ? `
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <div class="admin-section-title">Supervisors (${realPlayers.filter(p=>p.role==='supervisor').length})</div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr><th></th><th>Name</th><th>Position</th><th>Laps</th><th>Skip Tickets</th><th>Banked</th><th>Actions</th></tr></thead>
+            <tbody>${makeRows(realPlayers.filter(p=>p.role==='supervisor'))}</tbody>
+          </table>
+        </div>
+      </div>` : ''}
+
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <div class="admin-section-title">Admins (view only)</div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr><th></th><th>Name</th><th>Position</th><th>Laps</th><th>Skip Tickets</th><th>Banked</th><th>Actions</th></tr></thead>
+            <tbody>${makeRows(realPlayers.filter(p=>p.role==='admin'), false) || '<tr><td colspan="7" style="text-align:center;color:var(--grey);padding:2rem;">No other admins</td></tr>'}</tbody>
           </table>
         </div>
       </div>
@@ -2265,11 +2315,29 @@ Currently on space ${currentSpace}`)
     adminRenderPlayers()
   }
 
-  async function adminPromotePlayer(playerId, name) {
-    if (!confirm(`Promote ${name} to admin?\n\nThey will have full access to the admin panel.`)) return
-    const { error } = await sb.from('profiles').update({ role: 'admin' }).eq('id', playerId)
+  async function adminPromotePlayer(playerId, name, currentRole) {
+    const options = currentRole === 'staff'
+      ? [['supervisor', 'Promote to Supervisor'], ['admin', 'Promote to Admin']]
+      : currentRole === 'supervisor'
+      ? [['staff', 'Demote to Staff'], ['admin', 'Promote to Admin']]
+      : [['supervisor', 'Demote to Supervisor'], ['staff', 'Demote to Staff']]
+
+    const choice = options.length === 1 ? options[0][0]
+      : prompt(`Change role for ${name}:\n${options.map((o,i)=>`${i+1}. ${o[1]}`).join('\n')}\n\nEnter number:`)
+    
+    let newRole
+    if (options.length > 1) {
+      const idx = parseInt(choice) - 1
+      if (isNaN(idx) || idx < 0 || idx >= options.length) return
+      newRole = options[idx][0]
+    } else {
+      newRole = choice
+    }
+
+    if (!confirm(`Change ${name}'s role to ${newRole}?`)) return
+    const { error } = await sb.from('profiles').update({ role: newRole }).eq('id', playerId)
     if (error) { alert(error.message); return }
-    await adminLog(`Promoted ${name} to admin`)
+    await adminLog(`Changed ${name}'s role to ${newRole}`)
     adminRenderPlayers()
   }
 
@@ -2312,7 +2380,7 @@ Currently on space ${currentSpace}`)
         <div class="admin-section-header">
           <div class="admin-section-title">Add New Task</div>
         </div>
-        <div class="admin-section-body">
+        ${isAdmin() ? `<div class="admin-section-body">
           <div class="admin-form-row">
             <div class="admin-field" style="flex:2;">
               <label>Title</label>
@@ -2343,7 +2411,7 @@ Currently on space ${currentSpace}`)
           </div>
           <button class="btn btn-red" style="align-self:flex-start;" onclick="adminAddTask()">+ Add Task</button>
           <div id="task-add-alert"></div>
-        </div>
+        </div>` : `<div class="admin-section-body"><p style="font-size:0.82rem;color:var(--grey);">Supervisors can view tasks but cannot add or edit them.</p></div>`}
       </div>
       <div class="admin-section">
         <div class="admin-section-header">
@@ -3582,13 +3650,16 @@ Currently on space ${currentSpace}`)
   }
 
   async function adminRenderAuditLog() {
-    const { data: logs } = await sb.from('admin_logs')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(200)
+    // Supervisors only see their own + other supervisors' logs (not admin logs)
+    let query = sb.from('admin_logs').select('*, profiles!admin_logs_admin_id_fkey(role)')
+      .order('created_at', { ascending: false }).limit(200)
+    const { data: logs } = await query
+    const filtered = isSupervisor()
+      ? (logs||[]).filter(l => !l.profiles || l.profiles.role !== 'admin')
+      : (logs||[])
     const el = document.getElementById('admin-content')
 
-    const rows = (logs||[]).map(l => {
+    const rows = (filtered||[]).map(l => {
       const date = new Date(l.created_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
       return `<tr>
         <td><strong>${l.admin_name||'—'}</strong></td>
@@ -3620,7 +3691,7 @@ Currently on space ${currentSpace}`)
       .limit(100)
     const content = document.getElementById('admin-content')
 
-    const rows = (logs||[]).map(l => {
+    const rows = (filtered||[]).map(l => {
       const date  = new Date(l.completed_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
       const pips  = (l.tasks?.colours||[]).map(c => `<div class="task-colour-pip ${c}" style="display:inline-block;"></div>`).join(' ')
       return `<tr>
