@@ -214,14 +214,15 @@
       flex: 1; overflow: hidden; position: relative; cursor: grab; background: var(--dark);
     }
     .board-viewport:active { cursor: grabbing; }
+    .board-canvas {
+      position: absolute; top: 0; left: 0;
+      transform-origin: 0 0;
+      will-change: transform;
+      width: 100%;
+    }
+    .board-canvas.smooth { transition: transform 0.55s cubic-bezier(0.16, 1, 0.3, 1); }
 
-    #board-svg {
-      display: block; width: 100%; height: 100%;
-      transition: none;
-    }
-    #board-svg.smooth {
-      /* viewBox transitions not supported in CSS — handled via JS tween */
-    }
+    #board-svg { display: block; width: 100%; }
 
 
     /* Space circles */
@@ -925,9 +926,11 @@
         </div>
       </div>
 
-      <!-- Zoomable/pannable board viewport — SVG fills it, viewBox controls zoom/pan -->
+      <!-- Zoomable/pannable board viewport -->
       <div class="board-viewport" id="board-viewport">
-        <svg id="board-svg" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;"></svg>
+        <div class="board-canvas" id="board-canvas">
+          <svg id="board-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
       </div>
 
     </div>
@@ -1149,7 +1152,9 @@
   let boardPositions  = []    // [{x,y}] pixel positions for each space
   let boardSvgW       = 3000  // logical SVG width — high res
   let boardSvgH       = 2400  // logical SVG height
-  // viewBox camera state stored in vbX/vbY/vbW/vbH below
+  let cameraScale     = 1
+  let cameraX         = 0
+  let cameraY         = 0
   let boardFocusIdx   = -1    // which space index is currently focused (-1 = full board)
   let boardPlayerIdx  = 0     // which player we're tracking in player nav
   let isDragging      = false
@@ -1407,102 +1412,86 @@
   }
 
   // ════════════════════════════════
-  //  BOARD CAMERA — viewBox based
+  //  BOARD CAMERA & NAVIGATION
   // ════════════════════════════════
-  // Camera is expressed as a viewBox rectangle in SVG logical coordinates.
-  // Zooming/panning manipulates the viewBox directly → SVG always renders
-  // at full native resolution, no bitmap scaling ever.
+  // All coordinates are in SVG logical units (viewBox space).
+  // We calculate a base scale (svgNativeScale) that maps viewBox units → canvas pixels
+  // at scale=1, then cameraScale multiplies on top of that.
+  // This way all maths is stable and repeatable regardless of DOM state.
 
-  // Current viewBox state
-  let vbX = 0, vbY = 0, vbW = 3000, vbH = 2400
-
-  function applyViewBox(animate = true) {
-    const svg = document.getElementById('board-svg')
-    if (!svg) return
-    if (animate) {
-      // Tween to new viewBox
-      tweenViewBox(vbX, vbY, vbW, vbH)
-    } else {
-      svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
-    }
+  function getSvgNativeScale() {
+    // The SVG canvas div has a known pixel width (viewport width).
+    // boardSvgW is the viewBox width. Native scale = canvas_px / viewBox_units.
+    const canvas = document.getElementById('board-canvas')
+    if (!canvas) return 1
+    return canvas.clientWidth / boardSvgW || 1
   }
 
-  // Smooth viewBox tween using rAF
-  let vbTweenId = null
-  function tweenViewBox(tx, ty, tw, th, duration = 500) {
-    const svg = document.getElementById('board-svg')
-    if (!svg) return
-    if (vbTweenId) cancelAnimationFrame(vbTweenId)
-
-    const vbStr   = svg.getAttribute('viewBox')?.split(' ').map(Number) || [tx,ty,tw,th]
-    const [sx,sy,sw,sh] = vbStr
-    const start   = performance.now()
-
-    function step(now) {
-      const t    = Math.min((now - start) / duration, 1)
-      const ease = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2
-      const cx   = sx + (tx - sx) * ease
-      const cy   = sy + (ty - sy) * ease
-      const cw   = sw + (tw - sw) * ease
-      const ch   = sh + (th - sh) * ease
-      svg.setAttribute('viewBox', `${cx} ${cy} ${cw} ${ch}`)
-      if (t < 1) vbTweenId = requestAnimationFrame(step)
-      else { vbX = tx; vbY = ty; vbW = tw; vbH = th }
-    }
-    vbTweenId = requestAnimationFrame(step)
+  function applyCamera(animate = true) {
+    const canvas = document.getElementById('board-canvas')
+    if (!canvas) return
+    if (animate) canvas.classList.add('smooth')
+    else canvas.classList.remove('smooth')
+    canvas.style.transform = `translate(${cameraX}px, ${cameraY}px) scale(${cameraScale})`
   }
 
-  // Focus the viewBox on a logical point at a given zoom level
-  // zoomLevel: how many logical units wide the view should be (smaller = more zoomed in)
-  function focusOnPoint(lx, ly, viewWidth, animate = true) {
+  // Focus on a logical SVG position (in viewBox units)
+  function focusOnPoint(lx, ly, scale, animate = true) {
     const viewport = document.getElementById('board-viewport')
     if (!viewport) return
-    const aspect = viewport.clientHeight / viewport.clientWidth || 0.75
-    vbW = viewWidth
-    vbH = viewWidth * aspect
-    vbX = lx - vbW / 2
-    vbY = ly - vbH / 2
-    applyViewBox(animate)
+    const vw = viewport.clientWidth
+    const vh = viewport.clientHeight
+    const ns = getSvgNativeScale()   // canvas px per viewBox unit at scale=1
+    // Position after applying cameraScale:
+    //   screen_x = cameraX + lx * ns * scale
+    // We want screen_x = vw/2, so:
+    cameraScale = scale
+    cameraX = vw / 2 - lx * ns * scale
+    cameraY = vh / 2 - ly * ns * scale
+    applyCamera(animate)
   }
 
-  // Get the full board viewBox (all content visible)
-  function getFullBoardViewBox() {
-    const svg     = document.getElementById('board-svg')
-    const origVB  = svg?.getAttribute('data-full-viewbox')
-    if (origVB) {
-      const parts = origVB.split(' ').map(Number)
-      return { x: parts[0], y: parts[1], w: parts[2], h: parts[3] }
-    }
-    return { x: 0, y: -50, w: boardSvgW, h: boardSvgH + 50 }
-  }
-
-  function boardFocusPosition(posIdx, animate = true, zoomW = 900) {
+  function boardFocusPosition(posIdx, animate = true, scale = 3) {
     if (!boardPositions[posIdx]) return
     const pos = boardPositions[posIdx]
-    focusOnPoint(pos.x, pos.y, zoomW, animate)
+    // Adjust for viewBox y offset (badge overhang shifts y by -50)
+    const vbParts = document.getElementById('board-svg')?.getAttribute('viewBox')?.split(' ') || []
+    const vbOffY  = parseFloat(vbParts[1]) || 0
+    focusOnPoint(pos.x, pos.y - vbOffY, scale, animate)
     boardFocusIdx = posIdx
   }
 
   function boardZoomOut(animate = true) {
-    const fb = getFullBoardViewBox()
-    // Fit to viewport aspect
     const viewport = document.getElementById('board-viewport')
-    const aspect   = viewport ? viewport.clientHeight / viewport.clientWidth : 0.75
-    const fittedH  = fb.w * aspect
-    vbX = fb.x; vbY = fb.y - (fittedH - fb.h) / 2
-    vbW = fb.w; vbH = fittedH
+    const canvas   = document.getElementById('board-canvas')
+    if (!viewport || !canvas) return
+
+    const vw = viewport.clientWidth
+    const vh = viewport.clientHeight
+    const ns = getSvgNativeScale()
+
+    // Full SVG logical size in canvas pixels at scale=1
+    const vbParts = document.getElementById('board-svg')?.getAttribute('viewBox')?.split(' ') || []
+    const vbH     = parseFloat(vbParts[3]) || boardSvgH
+    const svgPxW  = boardSvgW * ns
+    const svgPxH  = vbH * ns
+
+    const scale = Math.min((vw * 0.95) / svgPxW, (vh * 0.95) / svgPxH)
+    cameraScale = scale
+    cameraX     = (vw - svgPxW * scale) / 2
+    cameraY     = (vh - svgPxH * scale) / 2
     boardFocusIdx = -1
     document.getElementById('board-nav-label').textContent = 'Full Board'
-    applyViewBox(animate)
+    applyCamera(animate)
   }
 
   function boardFocusMySpace(instant = false) {
     const mySpace = currentProfile?.current_space || 1
     const idx     = mySpace - 1
     if (boardPositions[idx]) {
-      boardFocusPosition(idx, !instant, 900)
-      document.getElementById('board-nav-label').textContent =
-        `Space ${mySpace} · ${boardSpaces[idx]?.colour || ''}`
+      boardFocusPosition(idx, !instant, 3)
+      const colour = boardSpaces[idx]?.colour || 'green'
+      document.getElementById('board-nav-label').textContent = `Space ${mySpace} · ${colour}`
     } else {
       boardZoomOut(!instant)
     }
@@ -1514,9 +1503,8 @@
     const next    = dir === 'next'
       ? Math.min(current + 1, boardPositions.length - 1)
       : Math.max(current - 1, 0)
-    boardFocusPosition(next, true, 900)
-    document.getElementById('board-nav-label').textContent =
-      `Space ${next + 1} · ${boardSpaces[next]?.colour || ''}`
+    boardFocusPosition(next, true, 3)
+    document.getElementById('board-nav-label').textContent = `Space ${next + 1} · ${boardSpaces[next]?.colour || ''}`
     document.getElementById('btn-my-space')?.classList.remove('active')
   }
 
@@ -1527,51 +1515,35 @@
     else boardPlayerIdx = (boardPlayerIdx - 1 + players.length) % players.length
     const player   = players[boardPlayerIdx]
     const spaceIdx = (player.current_space || 1) - 1
-    boardFocusPosition(spaceIdx, true, 900)
-    document.getElementById('board-nav-label').textContent =
-      `${player.display_name} · Space ${player.current_space || 1}`
+    boardFocusPosition(spaceIdx, true, 3)
+    document.getElementById('board-nav-label').textContent = `${player.display_name} · Space ${player.current_space || 1}`
     document.getElementById('btn-my-space')?.classList.remove('active')
   }
 
-  // ── Touch/mouse pan — operates in viewBox space ──
+  // ── Touch/mouse pan ──
   function initBoardPan() {
     const viewport = document.getElementById('board-viewport')
     if (!viewport) return
 
-    // Convert screen pixels to SVG logical units
-    function screenToVB(px, py) {
-      const svg  = document.getElementById('board-svg')
-      const rect = viewport.getBoundingClientRect()
-      const scaleX = vbW / rect.width
-      const scaleY = vbH / rect.height
-      return { x: vbX + (px - rect.left) * scaleX, y: vbY + (py - rect.top) * scaleY }
-    }
-
-    let dragStartVB = null
-
     function onDown(e) {
-      if (vbTweenId) { cancelAnimationFrame(vbTweenId); vbTweenId = null }
-      isDragging  = true
-      const src   = e.touches ? e.touches[0] : e
-      dragStartX  = src.clientX; dragStartY = src.clientY
-      dragStartVB = { x: vbX, y: vbY }
+      isDragging = true
+      const src = e.touches ? e.touches[0] : e
+      dragStartX = src.clientX; dragStartY = src.clientY
+      dragCamX = cameraX; dragCamY = cameraY
       viewport.style.cursor = 'grabbing'
     }
-
     function onMove(e) {
-      if (!isDragging || !dragStartVB) return
+      if (!isDragging) return
       e.preventDefault()
-      const src   = e.touches ? e.touches[0] : e
-      const rect  = viewport.getBoundingClientRect()
-      const dx    = (src.clientX - dragStartX) * (vbW / rect.width)
-      const dy    = (src.clientY - dragStartY) * (vbH / rect.height)
-      vbX = dragStartVB.x - dx
-      vbY = dragStartVB.y - dy
-      const svg = document.getElementById('board-svg')
-      if (svg) svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
+      const src = e.touches ? e.touches[0] : e
+      cameraX = dragCamX + (src.clientX - dragStartX)
+      cameraY = dragCamY + (src.clientY - dragStartY)
+      applyCamera(false)
     }
-
-    function onUp() { isDragging = false; viewport.style.cursor = 'grab' }
+    function onUp() {
+      isDragging = false
+      viewport.style.cursor = 'grab'
+    }
 
     viewport.addEventListener('mousedown',  onDown)
     viewport.addEventListener('mousemove',  onMove)
@@ -1581,56 +1553,38 @@
     viewport.addEventListener('touchmove',  onMove, { passive: false })
     viewport.addEventListener('touchend',   onUp)
 
-    // Pinch zoom
-    let lastPinchDist = 0
+    // Pinch to zoom
+    let lastDist = 0
     viewport.addEventListener('touchstart', e => {
       if (e.touches.length === 2) {
-        lastPinchDist = Math.hypot(
-          e.touches[0].clientX - e.touches[1].clientX,
-          e.touches[0].clientY - e.touches[1].clientY
-        )
+        lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY)
       }
     })
     viewport.addEventListener('touchmove', e => {
-      if (e.touches.length !== 2) return
-      e.preventDefault()
-      const dist  = Math.hypot(
-        e.touches[0].clientX - e.touches[1].clientX,
-        e.touches[0].clientY - e.touches[1].clientY
-      )
-      const ratio = lastPinchDist / dist  // >1 = zooming out, <1 = zooming in
-      lastPinchDist = dist
-      // Zoom toward midpoint between fingers
-      const mx = (e.touches[0].clientX + e.touches[1].clientX) / 2
-      const my = (e.touches[0].clientY + e.touches[1].clientY) / 2
-      zoomViewBox(ratio, mx, my)
+      if (e.touches.length === 2) {
+        e.preventDefault()
+        const dist  = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY)
+        const delta = dist / lastDist
+        cameraScale = Math.max(0.3, Math.min(5, cameraScale * delta))
+        lastDist = dist
+        applyCamera(false)
+      }
     }, { passive: false })
 
-    // Scroll wheel zoom toward cursor
+    // Scroll wheel zoom
     viewport.addEventListener('wheel', e => {
       e.preventDefault()
-      const ratio = e.deltaY > 0 ? 1.12 : 0.89
-      zoomViewBox(ratio, e.clientX, e.clientY)
+      const delta     = e.deltaY > 0 ? 0.85 : 1.18
+      const newScale  = Math.max(0.3, Math.min(5, cameraScale * delta))
+      // Zoom toward mouse position
+      const rect      = viewport.getBoundingClientRect()
+      const mx        = e.clientX - rect.left
+      const my        = e.clientY - rect.top
+      cameraX = mx - (mx - cameraX) * (newScale / cameraScale)
+      cameraY = my - (my - cameraY) * (newScale / cameraScale)
+      cameraScale     = newScale
+      applyCamera(false)
     }, { passive: false })
-  }
-
-  // Zoom viewBox by ratio, keeping the point under (screenX, screenY) fixed
-  function zoomViewBox(ratio, screenX, screenY) {
-    const viewport = document.getElementById('board-viewport')
-    const svg      = document.getElementById('board-svg')
-    if (!viewport || !svg) return
-    const rect  = viewport.getBoundingClientRect()
-    // Point under cursor in SVG coords
-    const px = vbX + (screenX - rect.left) * (vbW / rect.width)
-    const py = vbY + (screenY - rect.top)  * (vbH / rect.height)
-    // New viewBox size (clamped)
-    const newW = Math.max(200, Math.min(boardSvgW * 2, vbW * ratio))
-    const newH = Math.max(150, Math.min(boardSvgH * 2, vbH * ratio))
-    // Shift so the point stays fixed
-    vbX = px - (screenX - rect.left) * (newW / rect.width)
-    vbY = py - (screenY - rect.top)  * (newH / rect.height)
-    vbW = newW; vbH = newH
-    svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
   }
 
   // ── Animated player movement ──
@@ -1706,7 +1660,9 @@
     // Tween avatar from→to, camera follows
     const DURATION = 700
     const start    = performance.now()
-    // zoom level: keep current vbW for animation pan
+    const vbParts  = svg.getAttribute('viewBox')?.split(' ') || []
+    const vbOffY   = parseFloat(vbParts[1]) || 0
+    const ns       = getSvgNativeScale()
 
     await new Promise(resolve => {
       function step(now) {
@@ -1725,14 +1681,13 @@
         if (txt2) { txt2.setAttribute('x', cx); txt2.setAttribute('y', cy) }
         if (bg2)  { bg2.setAttribute('cx', cx); bg2.setAttribute('cy', cy) }
 
-        // Camera follows avatar — update viewBox to keep avatar centred
-        const viewport2 = document.getElementById('board-viewport')
-        if (viewport2) {
-          const aspect = viewport2.clientHeight / viewport2.clientWidth || 0.75
-          vbX = cx - vbW / 2
-          vbY = cy - vbH / 2
-          const svgEl = document.getElementById('board-svg')
-          if (svgEl) svgEl.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
+        // Camera follows
+        const viewport = document.getElementById('board-viewport')
+        if (viewport) {
+          const vw = viewport.clientWidth, vh = viewport.clientHeight
+          cameraX = vw / 2 - cx * ns * cameraScale
+          cameraY = vh / 2 - (cy - vbOffY) * ns * cameraScale
+          applyCamera(false)
         }
 
         if (t < 1) requestAnimationFrame(step)
@@ -1807,8 +1762,8 @@
   function renderBoard() {
     const svg   = document.getElementById('board-svg')
     const total = boardSpaces.length
-    const R     = 44    // larger circles — crisp at high zoom
-    const AV    = 16    // avatar size inside spaces
+    const R     = 36    // larger circles — crisp at high zoom
+    const AV    = 13    // avatar size inside spaces
     const MAX_VISIBLE = 3
     const PAD   = 160   // padding for badges
     const WIDTH = 3000  // high-res coordinate space
@@ -2132,17 +2087,8 @@
     boardSvgW = WIDTH
     boardSvgH = svgH
 
-    // Store the full viewBox on the SVG element for boardZoomOut reference
-    const fullVbOffY = -BADGE_OVERHANG
-    const fullVbH    = svgH + BADGE_OVERHANG
-    svg.setAttribute('data-full-viewbox', `0 ${fullVbOffY} ${WIDTH} ${fullVbH}`)
-
-    // Set initial viewBox to full board (instant, no animation)
-    vbX = 0; vbY = fullVbOffY; vbW = WIDTH; vbH = fullVbH
-    svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
-
-    // Focus on my space after a short delay
-    setTimeout(() => boardFocusMySpace(true), 200)
+    // Focus on my space after render
+    setTimeout(() => boardFocusMySpace(true), 150)
   }
 
   // ════════════════════════════════
