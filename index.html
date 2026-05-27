@@ -1504,9 +1504,12 @@
       document.getElementById('mob-panel-' + tab)?.classList.add('active')
     }
 
-    // Floating player card only on board tab
+    // Floating player card only on board tab — check if we're on mobile first
     const card = document.getElementById('mobile-player-card')
-    if (card) card.style.display = tab === 'board' ? '' : 'none'
+    if (card) {
+      const onMobile = window.innerWidth <= 700
+      card.style.display = (tab === 'board' && onMobile) ? 'block' : 'none'
+    }
 
     // If tasks tab — sync content
     if (tab === 'tasks') syncMobileTasks()
