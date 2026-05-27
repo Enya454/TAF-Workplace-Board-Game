@@ -252,6 +252,138 @@
     @media (max-width: 600px) { .side-panel { display: none; } .board-area { padding: 0.75rem; } }
 
     /* ════════════════════════════
+       ADMIN PANEL
+    ════════════════════════════ */
+    #page-admin { flex-direction: row; background: var(--dark); align-items: stretch; justify-content: flex-start; }
+
+    /* Sidebar */
+    .admin-sidebar {
+      width: 220px; flex-shrink: 0;
+      background: var(--dark-2); border-right: 1px solid rgba(255,255,255,0.07);
+      display: flex; flex-direction: column; padding: 1.5rem 0;
+    }
+    .admin-sidebar-logo {
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 900;
+      font-size: 1.2rem; letter-spacing: 0.05em; color: var(--red);
+      padding: 0 1.25rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 0.75rem;
+    }
+    .admin-sidebar-logo span { color: rgba(255,255,255,0.4); font-size: 0.7rem; display: block; font-weight: 400; letter-spacing: 0.1em; text-transform: uppercase; margin-top: 0.1rem; }
+    .admin-nav-item {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.65rem 1.25rem; cursor: pointer; font-size: 0.88rem; font-weight: 500;
+      color: var(--grey-light); transition: background 0.15s, color 0.15s;
+      border-left: 3px solid transparent; user-select: none;
+    }
+    .admin-nav-item:hover { background: rgba(255,255,255,0.04); color: #fff; }
+    .admin-nav-item.active { background: rgba(232,17,45,0.08); color: #fff; border-left-color: var(--red); }
+    .admin-nav-icon { font-size: 1rem; width: 20px; text-align: center; flex-shrink: 0; }
+    .admin-sidebar-bottom { margin-top: auto; padding: 0 1rem; display: flex; flex-direction: column; gap: 0.5rem; }
+
+    /* Main content */
+    .admin-main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-width: 0; }
+    .admin-topbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.5rem; background: var(--dark-2);
+      border-bottom: 1px solid rgba(255,255,255,0.07); flex-shrink: 0;
+    }
+    .admin-topbar-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 1.5rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .admin-content { padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; flex: 1; }
+
+    /* Admin sections */
+    .admin-section {
+      background: var(--dark-2); border: 1px solid rgba(255,255,255,0.07);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .admin-section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.9rem 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .admin-section-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .admin-section-body { padding: 1.1rem 1.2rem; display: flex; flex-direction: column; gap: 0.75rem; }
+
+    /* Admin table */
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .admin-table th { text-align: left; padding: 0.5rem 0.75rem; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--grey); border-bottom: 1px solid rgba(255,255,255,0.06); font-weight: 600; }
+    .admin-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: middle; }
+    .admin-table tr:last-child td { border-bottom: none; }
+    .admin-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    /* Inline form row */
+    .admin-form-row { display: flex; gap: 0.6rem; align-items: flex-end; flex-wrap: wrap; }
+    .admin-field { display: flex; flex-direction: column; gap: 0.3rem; flex: 1; min-width: 120px; }
+    .admin-field label { font-size: 0.68rem; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase; color: var(--grey-light); }
+    .admin-input {
+      background: var(--dark-3); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-sm); color: #fff; font-family: 'Barlow', sans-serif;
+      font-size: 0.88rem; padding: 0.55rem 0.8rem; outline: none;
+      transition: border-color 0.2s;
+    }
+    .admin-input:focus { border-color: var(--red); }
+    .admin-input::placeholder { color: #444; }
+    .admin-select { appearance: none; cursor: pointer; }
+
+    /* Colour checkboxes */
+    .colour-checks { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .colour-check {
+      display: flex; align-items: center; gap: 0.35rem;
+      background: var(--dark-3); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius-sm); padding: 0.35rem 0.65rem; cursor: pointer;
+      font-size: 0.8rem; font-weight: 600; user-select: none;
+      transition: border-color 0.15s, background 0.15s;
+    }
+    .colour-check input { display: none; }
+    .colour-check.green.checked { background: var(--green-bg); border-color: var(--green-border); color: var(--green); }
+    .colour-check.blue.checked  { background: var(--blue-s-bg); border-color: var(--blue-s-border); color: #60aaff; }
+    .colour-check.red.checked   { background: var(--red-s-bg); border-color: var(--red-s-border); color: #ff7088; }
+
+    /* Small action buttons */
+    .btn-xs {
+      border: none; border-radius: 6px; font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 700; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 0.28rem 0.6rem; cursor: pointer; white-space: nowrap; transition: background 0.15s;
+    }
+    .btn-xs-red { background: rgba(232,17,45,0.15); color: #ff7088; border: 1px solid rgba(232,17,45,0.25); }
+    .btn-xs-red:hover { background: rgba(232,17,45,0.25); }
+    .btn-xs-green { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
+    .btn-xs-green:hover { background: rgba(34,197,94,0.25); }
+    .btn-xs-blue { background: rgba(59,130,246,0.15); color: #60aaff; border: 1px solid rgba(59,130,246,0.25); }
+    .btn-xs-blue:hover { background: rgba(59,130,246,0.25); }
+    .btn-xs-grey { background: rgba(255,255,255,0.07); color: var(--grey-light); border: 1px solid rgba(255,255,255,0.1); }
+    .btn-xs-grey:hover { background: rgba(255,255,255,0.12); }
+
+    /* Status pill */
+    .pill { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 99px; font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+    .pill-green { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.25); }
+    .pill-grey  { background: rgba(255,255,255,0.07); color: var(--grey); border: 1px solid rgba(255,255,255,0.1); }
+    .pill-red   { background: rgba(232,17,45,0.12); color: #ff7088; border: 1px solid rgba(232,17,45,0.2); }
+    .pill-blue  { background: rgba(59,130,246,0.12); color: #60aaff; border: 1px solid rgba(59,130,246,0.2); }
+
+    /* Grid layout for board config */
+    .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; }
+    .config-card { background: var(--dark-3); border: 1px solid rgba(255,255,255,0.07); border-radius: var(--radius-sm); padding: 0.9rem 1rem; }
+    .config-card-label { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--grey); margin-bottom: 0.4rem; }
+
+    /* Task list in admin */
+    .admin-task-colours { display: flex; gap: 3px; }
+
+    /* Staff view banner */
+    .staff-view-banner {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 999;
+      background: #f59e0b; color: #000; padding: 0.6rem 1.5rem;
+      display: flex; align-items: center; justify-content: space-between;
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+      font-size: 0.95rem; letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .staff-view-banner button {
+      background: rgba(0,0,0,0.2); border: none; border-radius: 6px;
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+      font-size: 0.85rem; color: #000; padding: 0.3rem 0.9rem; cursor: pointer;
+      letter-spacing: 0.04em; text-transform: uppercase;
+    }
+    .staff-view-banner button:hover { background: rgba(0,0,0,0.35); }
+
+    /* ════════════════════════════
        TASK PANEL (right of badge)
     ════════════════════════════ */
     .task-panel {
@@ -618,13 +750,47 @@
 
 <!-- ══ ADMIN ══ -->
 <div class="page" id="page-admin">
-  <div class="admin-card">
-    <span style="font-size:3rem;display:block;margin-bottom:1rem;">⚙️</span>
-    <div class="role-badge admin" style="margin-bottom:1rem;">Admin</div>
-    <h1 id="admin-welcome">Admin Panel</h1>
-    <p style="margin-top:0.5rem;">Full admin tools coming in Phase 4.</p>
-    <button class="btn btn-ghost btn-full" onclick="handleSignOut()" style="margin-top:1.5rem;">Sign Out</button>
+
+  <!-- Sidebar -->
+  <div class="admin-sidebar">
+    <div class="admin-sidebar-logo">AF Game<span>Admin Panel</span></div>
+    <div class="admin-nav-item active" onclick="adminNav('players')" id="anav-players">
+      <span class="admin-nav-icon">👥</span> Players
+    </div>
+    <div class="admin-nav-item" onclick="adminNav('tasks')" id="anav-tasks">
+      <span class="admin-nav-icon">📋</span> Tasks
+    </div>
+    <div class="admin-nav-item" onclick="adminNav('employees')" id="anav-employees">
+      <span class="admin-nav-icon">🪪</span> Employee Numbers
+    </div>
+    <div class="admin-nav-item" onclick="adminNav('board')" id="anav-board">
+      <span class="admin-nav-icon">🎲</span> Board Config
+    </div>
+    <div class="admin-nav-item" onclick="adminNav('history')" id="anav-history">
+      <span class="admin-nav-icon">📜</span> Task History
+    </div>
+    <div class="admin-sidebar-bottom">
+      <button class="btn btn-blue btn-full btn-sm" onclick="enterStaffView()">👟 Staff View</button>
+      <button class="btn btn-ghost btn-full btn-sm" onclick="handleSignOut()">Sign Out</button>
+    </div>
   </div>
+
+  <!-- Main content -->
+  <div class="admin-main">
+    <div class="admin-topbar">
+      <div class="admin-topbar-title" id="admin-section-title">Players</div>
+      <div id="admin-welcome" style="font-size:0.82rem;color:var(--grey);"></div>
+    </div>
+    <div class="admin-content" id="admin-content">
+      <div style="color:var(--grey);text-align:center;padding:3rem;">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Staff view banner (shown when admin is in staff view) -->
+<div id="staff-view-banner" class="staff-view-banner" style="display:none;">
+  <span>👀 Viewing as Staff — changes are real!</span>
+  <button onclick="exitStaffView()">← Back to Admin</button>
 </div>
 
 <!-- ══ AVATAR MODAL ══ -->
@@ -762,8 +928,9 @@
     if (!profile) { showPage('login'); return }
     currentProfile = profile
     if (profile.role === 'admin') {
-      document.getElementById('admin-welcome').textContent = `Welcome, ${profile.display_name}`
+      document.getElementById('admin-welcome').textContent = `Signed in as ${profile.display_name}`
       showPage('admin')
+      await initAdmin()
     } else {
       await initGame()
     }
@@ -1536,6 +1703,414 @@
     renderPlayerBadge()
     await renderTaskPanel()
     await advanceSpace()
+  }
+
+  // ════════════════════════════════
+  //  ADMIN
+  // ════════════════════════════════
+  let adminSection = 'players'
+  let isStaffView  = false
+
+  async function initAdmin() {
+    await adminNav('players')
+  }
+
+  function adminNav(section) {
+    adminSection = section
+    document.querySelectorAll('.admin-nav-item').forEach(el => el.classList.remove('active'))
+    const navEl = document.getElementById('anav-' + section)
+    if (navEl) navEl.classList.add('active')
+    const titles = { players:'Players', tasks:'Tasks', employees:'Employee Numbers', board:'Board Config', history:'Task History' }
+    document.getElementById('admin-section-title').textContent = titles[section] || section
+    const content = document.getElementById('admin-content')
+    content.innerHTML = '<div style="color:var(--grey);text-align:center;padding:3rem;"><span class="spinner" style="width:28px;height:28px;border-width:3px;"></span></div>'
+    const fns = { players: adminRenderPlayers, tasks: adminRenderTasks, employees: adminRenderEmployees, board: adminRenderBoard, history: adminRenderHistory }
+    if (fns[section]) fns[section]()
+  }
+
+  // ── PLAYERS ──
+  async function adminRenderPlayers() {
+    const { data: players } = await sb.from('profiles').select('*').eq('role','staff').order('laps_completed',{ascending:false})
+    const { data: spaces }  = await sb.from('board_spaces').select('*').order('position')
+    const content = document.getElementById('admin-content')
+
+    let rows = (players||[]).map(p => {
+      const sc     = (spaces||[]).find(s => s.position === (p.current_space||1))?.colour || 'green'
+      const banked = Array.isArray(p.banked_tasks) ? p.banked_tasks : []
+      const avUrl  = p.avatar && p.avatar.startsWith('http') ? p.avatar : null
+      const avHtml = avUrl
+        ? `<img src="${avUrl}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(255,255,255,0.15);">`
+        : `<div style="width:28px;height:28px;border-radius:50%;background:${stringToColour(p.id||p.display_name)};display:inline-flex;align-items:center;justify-content:center;font-size:0.62rem;font-weight:700;">${initials(p.display_name)}</div>`
+      return `<tr>
+        <td>${avHtml}</td>
+        <td><strong>${p.display_name}</strong><br><span style="font-size:0.72rem;color:var(--grey);">${p.employee_number||''}</span></td>
+        <td><span class="pill pill-${sc === 'green' ? 'green' : sc === 'blue' ? 'blue' : 'red'}">Space ${p.current_space||1} · ${sc}</span></td>
+        <td>${p.laps_completed||0}</td>
+        <td>${p.skip_tickets||0}
+          <button class="btn-xs btn-xs-green" style="margin-left:0.4rem;" onclick="adminAwardTicket('${p.id}','${p.display_name}',${p.skip_tickets||0})">+</button>
+        </td>
+        <td>${banked.length}/3
+          ${banked.length > 0 ? `<button class="btn-xs btn-xs-grey" style="margin-left:0.4rem;" onclick="adminEditBanked('${p.id}','${p.display_name}')">Edit</button>` : ''}
+        </td>
+        <td>
+          <button class="btn-xs btn-xs-blue" onclick="adminMovePlayer('${p.id}','${p.display_name}',${p.current_space||1})">Move</button>
+        </td>
+      </tr>`
+    }).join('')
+
+    content.innerHTML = `
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <div class="admin-section-title">All Staff (${(players||[]).length})</div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr>
+              <th></th><th>Name</th><th>Position</th><th>Laps</th><th>Skip Tickets</th><th>Banked</th><th>Actions</th>
+            </tr></thead>
+            <tbody>${rows || '<tr><td colspan="7" style="text-align:center;color:var(--grey);padding:2rem;">No staff yet</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>`
+  }
+
+  async function adminAwardTicket(playerId, name, current) {
+    if (!confirm(`Award 1 skip ticket to ${name}? They currently have ${current}.`)) return
+    await sb.from('profiles').update({ skip_tickets: current + 1 }).eq('id', playerId)
+    adminRenderPlayers()
+  }
+
+  async function adminMovePlayer(playerId, name, currentSpace) {
+    const input = prompt(`Move ${name} to which space? (1–${boardConfig.total_spaces||40})
+Currently on space ${currentSpace}`)
+    if (!input) return
+    const space = parseInt(input)
+    if (isNaN(space) || space < 1 || space > (boardConfig.total_spaces||40)) { alert('Invalid space number.'); return }
+    await sb.from('profiles').update({ current_space: space, space_tasks_completed: 0 }).eq('id', playerId)
+    adminRenderPlayers()
+  }
+
+  async function adminEditBanked(playerId, name) {
+    const { data: p } = await sb.from('profiles').select('banked_tasks').eq('id', playerId).single()
+    const banked = Array.isArray(p?.banked_tasks) ? p.banked_tasks : []
+    if (banked.length === 0) { alert('No banked tasks to edit.'); return }
+    const list = banked.map((bt,i) => `${i+1}. ${bt.title}`).join('
+')
+    const input = prompt(`${name}'s banked tasks:
+${list}
+
+Enter number to remove (or cancel):`)
+    if (!input) return
+    const idx = parseInt(input) - 1
+    if (isNaN(idx) || idx < 0 || idx >= banked.length) { alert('Invalid selection.'); return }
+    banked.splice(idx, 1)
+    await sb.from('profiles').update({ banked_tasks: banked }).eq('id', playerId)
+    adminRenderPlayers()
+  }
+
+  // ── TASKS ──
+  async function adminRenderTasks() {
+    const { data: tasks } = await sb.from('tasks').select('*').order('id')
+    const content = document.getElementById('admin-content')
+
+    const rows = (tasks||[]).map(t => {
+      const pips = (t.colours||[]).map(c => `<div class="task-colour-pip ${c}" style="display:inline-block;"></div>`).join(' ')
+      const monthLabel = t.month ? `Month ${t.month}` : '—'
+      return `<tr>
+        <td><div class="admin-task-colours">${pips}</div></td>
+        <td><strong>${t.title}</strong>${t.description ? `<br><span style="font-size:0.72rem;color:var(--grey);">${t.description}</span>` : ''}</td>
+        <td>${monthLabel}</td>
+        <td><span class="pill ${t.active ? 'pill-green' : 'pill-grey'}">${t.active ? 'Active' : 'Inactive'}</span></td>
+        <td style="display:flex;gap:0.35rem;flex-wrap:wrap;">
+          <button class="btn-xs btn-xs-${t.active ? 'grey' : 'green'}" onclick="adminToggleTask(${t.id},${t.active})">${t.active ? 'Deactivate' : 'Activate'}</button>
+          <button class="btn-xs btn-xs-red" onclick="adminDeleteTask(${t.id},'${t.title.replace(/'/g,"\'")}')">Delete</button>
+        </td>
+      </tr>`
+    }).join('')
+
+    content.innerHTML = `
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <div class="admin-section-title">Add New Task</div>
+        </div>
+        <div class="admin-section-body">
+          <div class="admin-form-row">
+            <div class="admin-field" style="flex:2;">
+              <label>Title</label>
+              <input class="admin-input" id="new-task-title" placeholder="Task name" />
+            </div>
+            <div class="admin-field" style="flex:1;min-width:80px;">
+              <label>Month (blue only)</label>
+              <input class="admin-input" id="new-task-month" type="number" placeholder="e.g. 6" min="1" max="12" />
+            </div>
+          </div>
+          <div class="admin-field">
+            <label>Description (optional)</label>
+            <input class="admin-input" id="new-task-desc" placeholder="More detail about this task" />
+          </div>
+          <div class="admin-field">
+            <label>Colours</label>
+            <div class="colour-checks">
+              <label class="colour-check green" id="cc-green" onclick="toggleColourCheck('green')">
+                <input type="checkbox" id="chk-green"> 🟢 Green
+              </label>
+              <label class="colour-check blue" id="cc-blue" onclick="toggleColourCheck('blue')">
+                <input type="checkbox" id="chk-blue"> 🔵 Blue
+              </label>
+              <label class="colour-check red" id="cc-red" onclick="toggleColourCheck('red')">
+                <input type="checkbox" id="chk-red"> 🔴 Red
+              </label>
+            </div>
+          </div>
+          <button class="btn btn-red" style="align-self:flex-start;" onclick="adminAddTask()">+ Add Task</button>
+          <div id="task-add-alert"></div>
+        </div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <div class="admin-section-title">All Tasks (${(tasks||[]).length})</div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr><th>Colour</th><th>Task</th><th>Month</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>${rows || '<tr><td colspan="5" style="text-align:center;color:var(--grey);padding:2rem;">No tasks yet</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>`
+  }
+
+  function toggleColourCheck(colour) {
+    const el = document.getElementById('cc-' + colour)
+    const chk = document.getElementById('chk-' + colour)
+    chk.checked = !chk.checked
+    el.classList.toggle('checked', chk.checked)
+  }
+
+  async function adminAddTask() {
+    const title  = document.getElementById('new-task-title').value.trim()
+    const desc   = document.getElementById('new-task-desc').value.trim()
+    const month  = document.getElementById('new-task-month').value
+    const colours = ['green','blue','red'].filter(c => document.getElementById('chk-' + c)?.checked)
+    if (!title) { setAlert('task-add-alert','Please enter a task title.'); return }
+    if (colours.length === 0) { setAlert('task-add-alert','Select at least one colour.'); return }
+    const { error } = await sb.from('tasks').insert({
+      title, description: desc || null,
+      colours, active: true,
+      month: month ? parseInt(month) : null
+    })
+    if (error) { setAlert('task-add-alert', error.message); return }
+    adminRenderTasks()
+  }
+
+  async function adminToggleTask(id, current) {
+    await sb.from('tasks').update({ active: !current }).eq('id', id)
+    adminRenderTasks()
+  }
+
+  async function adminDeleteTask(id, title) {
+    if (!confirm(`Delete task "${title}"? This cannot be undone.`)) return
+    await sb.from('tasks').delete().eq('id', id)
+    adminRenderTasks()
+  }
+
+  // ── EMPLOYEES ──
+  async function adminRenderEmployees() {
+    const { data: emps } = await sb.from('employee_numbers').select('*').order('id')
+    const content = document.getElementById('admin-content')
+
+    const rows = (emps||[]).map(e => `<tr>
+      <td><code style="font-size:0.85rem;">${e.employee_number}</code></td>
+      <td><span class="pill ${e.is_used ? 'pill-grey' : 'pill-green'}">${e.is_used ? 'Registered' : 'Available'}</span></td>
+      <td>
+        ${!e.is_used ? `<button class="btn-xs btn-xs-red" onclick="adminRemoveEmp(${e.id},'${e.employee_number}')">Remove</button>` : '—'}
+      </td>
+    </tr>`).join('')
+
+    content.innerHTML = `
+      <div class="admin-section">
+        <div class="admin-section-header"><div class="admin-section-title">Add Employee Numbers</div></div>
+        <div class="admin-section-body">
+          <p style="font-size:0.82rem;color:var(--grey-light);">Add one or multiple numbers separated by commas or new lines.</p>
+          <div class="admin-form-row">
+            <div class="admin-field">
+              <label>Employee Number(s)</label>
+              <input class="admin-input" id="new-emp-nums" placeholder="e.g. EMP010, EMP011" />
+            </div>
+            <button class="btn btn-red" style="align-self:flex-end;" onclick="adminAddEmps()">+ Add</button>
+          </div>
+          <div id="emp-add-alert"></div>
+        </div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-header"><div class="admin-section-title">All Employee Numbers (${(emps||[]).length})</div></div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr><th>Employee Number</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody>${rows || '<tr><td colspan="3" style="text-align:center;color:var(--grey);padding:2rem;">None added yet</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>`
+  }
+
+  async function adminAddEmps() {
+    const raw = document.getElementById('new-emp-nums').value
+    const nums = raw.split(/[
+,]+/).map(s => s.trim()).filter(Boolean)
+    if (nums.length === 0) { setAlert('emp-add-alert','Please enter at least one number.'); return }
+    const rows = nums.map(n => ({ employee_number: n, is_used: false }))
+    const { error } = await sb.from('employee_numbers').insert(rows)
+    if (error) { setAlert('emp-add-alert', error.message); return }
+    adminRenderEmployees()
+  }
+
+  async function adminRemoveEmp(id, num) {
+    if (!confirm(`Remove employee number ${num}?`)) return
+    await sb.from('employee_numbers').delete().eq('id', id)
+    adminRenderEmployees()
+  }
+
+  // ── BOARD CONFIG ──
+  async function adminRenderBoard() {
+    const { data: cfg }    = await sb.from('board_config').select('*').single()
+    const { data: spaces } = await sb.from('board_spaces').select('*').order('position')
+    const content = document.getElementById('admin-content')
+
+    const colourCounts = { green: 0, blue: 0, red: 0 }
+    ;(spaces||[]).forEach(s => { if (colourCounts[s.colour] !== undefined) colourCounts[s.colour]++ })
+
+    content.innerHTML = `
+      <div class="admin-section">
+        <div class="admin-section-header"><div class="admin-section-title">Game Settings</div></div>
+        <div class="admin-section-body">
+          <div class="config-grid">
+            <div class="config-card">
+              <div class="config-card-label">Total Spaces</div>
+              <input class="admin-input" id="cfg-total" type="number" value="${cfg?.total_spaces||40}" min="10" max="100" style="width:100%;margin-top:0.3rem;" />
+            </div>
+            <div class="config-card">
+              <div class="config-card-label">🟢 Green Tasks Required</div>
+              <input class="admin-input" id="cfg-green" type="number" value="${cfg?.green_tasks_required||1}" min="1" max="10" style="width:100%;margin-top:0.3rem;" />
+            </div>
+            <div class="config-card">
+              <div class="config-card-label">🔵 Blue Tasks Required</div>
+              <input class="admin-input" id="cfg-blue" type="number" value="${cfg?.blue_tasks_required||2}" min="1" max="10" style="width:100%;margin-top:0.3rem;" />
+            </div>
+            <div class="config-card">
+              <div class="config-card-label">🔴 Red Tasks Required</div>
+              <input class="admin-input" id="cfg-red" type="number" value="${cfg?.red_tasks_required||3}" min="1" max="10" style="width:100%;margin-top:0.3rem;" />
+            </div>
+          </div>
+          <button class="btn btn-red" style="align-self:flex-start;" onclick="adminSaveConfig()">Save Settings</button>
+          <div id="cfg-alert"></div>
+        </div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-header"><div class="admin-section-title">Board Spaces</div></div>
+        <div class="admin-section-body">
+          <p style="font-size:0.82rem;color:var(--grey-light);">Current board: <strong>${(spaces||[]).length} spaces</strong> — 🟢 ${colourCounts.green} green · 🔵 ${colourCounts.blue} blue · 🔴 ${colourCounts.red} red</p>
+          <p style="font-size:0.82rem;color:var(--grey-light);">Regenerate the board using a probability distribution. This will reassign all space colours but won't reset player positions.</p>
+          <div class="admin-form-row">
+            <div class="admin-field">
+              <label>🟢 Green %</label>
+              <input class="admin-input" id="prob-green" type="number" value="60" min="0" max="100" />
+            </div>
+            <div class="admin-field">
+              <label>🔵 Blue %</label>
+              <input class="admin-input" id="prob-blue" type="number" value="25" min="0" max="100" />
+            </div>
+            <div class="admin-field">
+              <label>🔴 Red %</label>
+              <input class="admin-input" id="prob-red" type="number" value="15" min="0" max="100" />
+            </div>
+            <button class="btn btn-red" style="align-self:flex-end;" onclick="adminRegenBoard()">Regenerate</button>
+          </div>
+          <div id="board-alert"></div>
+        </div>
+      </div>`
+  }
+
+  async function adminSaveConfig() {
+    const total = parseInt(document.getElementById('cfg-total').value)
+    const green = parseInt(document.getElementById('cfg-green').value)
+    const blue  = parseInt(document.getElementById('cfg-blue').value)
+    const red   = parseInt(document.getElementById('cfg-red').value)
+    if ([total,green,blue,red].some(isNaN)) { setAlert('cfg-alert','Please fill in all fields.'); return }
+    const { error } = await sb.from('board_config').update({
+      total_spaces: total, green_tasks_required: green, blue_tasks_required: blue, red_tasks_required: red
+    }).eq('id', 1)
+    if (error) { setAlert('cfg-alert', error.message); return }
+    setAlert('cfg-alert', '✓ Settings saved!', 'success')
+    boardConfig = { ...boardConfig, total_spaces: total, green_tasks_required: green, blue_tasks_required: blue, red_tasks_required: red }
+  }
+
+  async function adminRegenBoard() {
+    const gPct = parseInt(document.getElementById('prob-green').value) || 60
+    const bPct = parseInt(document.getElementById('prob-blue').value)  || 25
+    const rPct = parseInt(document.getElementById('prob-red').value)   || 15
+    const total = parseInt(document.getElementById('cfg-total').value) || 40
+    const sum = gPct + bPct + rPct
+    if (sum === 0) { setAlert('board-alert','Percentages must add up to more than 0.'); return }
+    if (!confirm(`Regenerate all ${total} spaces with ${gPct}% green, ${bPct}% blue, ${rPct}% red?`)) return
+
+    const spaces = Array.from({ length: total }, (_, i) => {
+      const r = Math.random() * sum
+      const colour = r < gPct ? 'green' : r < gPct + bPct ? 'blue' : 'red'
+      return { position: i + 1, colour }
+    })
+
+    // Delete existing then insert new
+    await sb.from('board_spaces').delete().gte('position', 1)
+    const { error } = await sb.from('board_spaces').insert(spaces)
+    if (error) { setAlert('board-alert', error.message); return }
+    setAlert('board-alert', `✓ Board regenerated with ${total} spaces!`, 'success')
+    adminRenderBoard()
+  }
+
+  // ── TASK HISTORY ──
+  async function adminRenderHistory() {
+    const { data: logs } = await sb.from('completed_tasks')
+      .select('*, profiles(display_name), tasks(title, colours)')
+      .order('completed_at', { ascending: false })
+      .limit(100)
+    const content = document.getElementById('admin-content')
+
+    const rows = (logs||[]).map(l => {
+      const date  = new Date(l.completed_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
+      const pips  = (l.tasks?.colours||[]).map(c => `<div class="task-colour-pip ${c}" style="display:inline-block;"></div>`).join(' ')
+      return `<tr>
+        <td>${l.profiles?.display_name || '—'}</td>
+        <td><div style="display:flex;gap:3px;align-items:center;">${pips} ${l.tasks?.title || 'Deleted task'}</div></td>
+        <td>Space ${l.space_number||'—'}</td>
+        <td style="color:var(--grey);font-size:0.78rem;">${date}</td>
+      </tr>`
+    }).join('')
+
+    content.innerHTML = `
+      <div class="admin-section">
+        <div class="admin-section-header">
+          <div class="admin-section-title">Recent Completions (last 100)</div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr><th>Player</th><th>Task</th><th>Space</th><th>When</th></tr></thead>
+            <tbody>${rows || '<tr><td colspan="4" style="text-align:center;color:var(--grey);padding:2rem;">No completions yet</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>`
+  }
+
+  // ── STAFF VIEW ──
+  function enterStaffView() {
+    isStaffView = true
+    document.getElementById('staff-view-banner').style.display = 'flex'
+    initGame()
+  }
+
+  function exitStaffView() {
+    isStaffView = false
+    document.getElementById('staff-view-banner').style.display = 'none'
+    showPage('admin')
+    initAdmin()
   }
 
   // ════════════════════════════════
