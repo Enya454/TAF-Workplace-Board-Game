@@ -1289,13 +1289,8 @@
     renderSidePanel()
     renderSpaceBanner()
     await renderTaskPanel()
-    // Init pan/zoom after board fully renders and has dimensions
-    setTimeout(() => {
-      initBoardPan()
-      // Start with full board view, then smoothly zoom to my space
-      boardZoomOut(false)
-      setTimeout(() => boardFocusMySpace(), 300)
-    }, 300)
+    // Init pan only — viewBox already set correctly by renderBoard
+    setTimeout(initBoardPan, 100)
   }
 
   // Refresh allPlayers from DB and re-render board + panel
@@ -1703,8 +1698,10 @@
     }
     svg.appendChild(animG)
 
-    // Set a consistent zoom level for the animation (900 SVG units wide)
-    const ANIM_ZOOM = 900
+    // Zoom level that shows ~4-5 spaces — wide enough to see context during move
+    // Distance between from and to determines how wide to set the view
+    const dist      = Math.hypot(to.x - from.x, to.y - from.y)
+    const ANIM_ZOOM = Math.max(900, dist * 3.5)
     const viewport2 = document.getElementById('board-viewport')
     const aspect    = viewport2 ? viewport2.clientHeight / viewport2.clientWidth : 0.75
     const animVbW   = ANIM_ZOOM
@@ -2140,17 +2137,25 @@
     boardSvgW = WIDTH
     boardSvgH = svgH
 
-    // Store the full viewBox on the SVG element for boardZoomOut reference
+    // Store the full viewBox for boardZoomOut reference
     const fullVbOffY = -BADGE_OVERHANG
     const fullVbH    = svgH + BADGE_OVERHANG
     svg.setAttribute('data-full-viewbox', `0 ${fullVbOffY} ${WIDTH} ${fullVbH}`)
 
-    // Set initial viewBox to full board (instant, no animation)
-    vbX = 0; vbY = fullVbOffY; vbW = WIDTH; vbH = fullVbH
+    // Set viewBox directly to my space — no animation, no flash
+    const myIdx     = (currentProfile?.current_space || 1) - 1
+    const myPos     = positions[myIdx]
+    const viewport  = document.getElementById('board-viewport')
+    const aspect    = viewport ? viewport.clientHeight / viewport.clientWidth : 0.75
+    const initZoomW = 900
+    if (myPos) {
+      vbW = initZoomW; vbH = initZoomW * aspect
+      vbX = myPos.x - vbW / 2; vbY = myPos.y - vbH / 2
+    } else {
+      vbX = 0; vbY = fullVbOffY; vbW = WIDTH; vbH = fullVbH
+    }
     svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
-
-    // Focus on my space after a short delay
-    setTimeout(() => boardFocusMySpace(true), 200)
+    boardFocusIdx = myIdx
   }
 
   // ════════════════════════════════
