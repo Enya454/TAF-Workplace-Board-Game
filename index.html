@@ -1261,6 +1261,7 @@
   }
 
   async function handleSignOut() {
+    if (realtimeChannel) { sb.removeChannel(realtimeChannel); realtimeChannel = null }
     currentUser = null; currentProfile = null; boardSpaces = []; allPlayers = []
     await sb.auth.signOut()
   }
@@ -1289,8 +1290,8 @@
     renderSidePanel()
     renderSpaceBanner()
     await renderTaskPanel()
-    // Init pan only — viewBox already set correctly by renderBoard
     setTimeout(initBoardPan, 100)
+    initRealtimeBoard()
   }
 
   // Refresh allPlayers from DB and re-render board + panel
@@ -1725,6 +1726,141 @@
 
     // Clean up
     animG.remove(); clip.remove()
+  }
+
+  // ════════════════════════════════
+  //  REALTIME — other players moving
+  // ════════════════════════════════
+  let realtimeChannel = null
+
+  function initRealtimeBoard() {
+    // Clean up any existing subscription
+    if (realtimeChannel) { sb.removeChannel(realtimeChannel); realtimeChannel = null }
+
+    realtimeChannel = sb.channel('board-moves')
+      .on('postgres_changes', {
+        event:  'UPDATE',
+        schema: 'public',
+        table:  'profiles',
+        filter: `role=eq.staff`
+      }, payload => {
+        const updated = payload.new
+        const old     = payload.old
+        // Ignore our own moves — we already animate those
+        if (updated.id === effectiveId()) return
+        // Only animate if space actually changed
+        if (updated.current_space !== old.current_space) {
+          animateOtherPlayer(updated, old.current_space, updated.current_space)
+        } else {
+          // Other profile changes (avatar etc) — just refresh silently
+          const idx = allPlayers.findIndex(p => p.id === updated.id)
+          if (idx > -1) allPlayers[idx] = { ...allPlayers[idx], ...updated }
+          renderBoard()
+          renderSidePanel()
+        }
+      })
+      .subscribe()
+  }
+
+  async function animateOtherPlayer(player, fromSpace, toSpace) {
+    const fromIdx = (fromSpace || 1) - 1
+    const toIdx   = (toSpace   || 1) - 1
+    if (!boardPositions[fromIdx] || !boardPositions[toIdx]) return
+
+    const from = boardPositions[fromIdx]
+    const to   = boardPositions[toIdx]
+    const svg  = document.getElementById('board-svg')
+    if (!svg) return
+
+    const ANIM_R   = 24
+    const DURATION = 600
+    const animId   = 'anim-other-' + player.id.slice(0, 8)
+
+    // Remove any existing animation for this player
+    svg.querySelector('#' + animId)?.remove()
+
+    const animG = document.createElementNS('http://www.w3.org/2000/svg','g')
+    animG.setAttribute('id', animId)
+
+    // Subtle backdrop
+    const halo = document.createElementNS('http://www.w3.org/2000/svg','circle')
+    halo.setAttribute('r', ANIM_R + 8); halo.setAttribute('fill','rgba(255,255,255,0.08)')
+    animG.appendChild(halo)
+
+    const ring = document.createElementNS('http://www.w3.org/2000/svg','circle')
+    ring.setAttribute('r', ANIM_R + 3)
+    ring.setAttribute('fill','rgba(0,0,0,0.4)')
+    ring.setAttribute('stroke','rgba(255,255,255,0.6)'); ring.setAttribute('stroke-width','3')
+    animG.appendChild(ring)
+
+    // Avatar or initials
+    const clipId = 'anim-other-clip-' + player.id.slice(0,8)
+    const defsEl = svg.querySelector('defs') || svg.insertBefore(
+      document.createElementNS('http://www.w3.org/2000/svg','defs'), svg.firstChild)
+    const clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath')
+    clip.setAttribute('id', clipId)
+    const cc = document.createElementNS('http://www.w3.org/2000/svg','circle')
+    cc.setAttribute('r', ANIM_R); clip.appendChild(cc); defsEl.appendChild(clip)
+
+    const url = getAvatarUrl(player)
+    if (url) {
+      const img = document.createElementNS('http://www.w3.org/2000/svg','image')
+      img.setAttribute('href', url)
+      img.setAttribute('width', ANIM_R*2); img.setAttribute('height', ANIM_R*2)
+      img.setAttribute('clip-path', `url(#${clipId})`)
+      img.setAttribute('preserveAspectRatio','xMidYMid slice')
+      animG.appendChild(img)
+    } else {
+      const bg = document.createElementNS('http://www.w3.org/2000/svg','circle')
+      bg.setAttribute('r', ANIM_R)
+      bg.setAttribute('fill', stringToColour(player.id || player.display_name))
+      bg.setAttribute('clip-path', `url(#${clipId})`)
+      animG.appendChild(bg)
+      const txt = document.createElementNS('http://www.w3.org/2000/svg','text')
+      txt.setAttribute('text-anchor','middle'); txt.setAttribute('dominant-baseline','middle')
+      txt.setAttribute('fill','#fff'); txt.setAttribute('font-weight','900')
+      txt.setAttribute('font-family','Barlow Condensed, sans-serif')
+      txt.setAttribute('font-size','20')
+      txt.textContent = initials(player.display_name)
+      animG.appendChild(txt)
+    }
+
+    function moveAll(cx, cy) {
+      halo.setAttribute('cx',cx); halo.setAttribute('cy',cy)
+      ring.setAttribute('cx',cx); ring.setAttribute('cy',cy)
+      cc.setAttribute('cx',cx);   cc.setAttribute('cy',cy)
+      const img = animG.querySelector('image')
+      const txt = animG.querySelector('text')
+      const bg  = animG.querySelectorAll('circle')[2]
+      if (img) { img.setAttribute('x', cx-ANIM_R); img.setAttribute('y', cy-ANIM_R) }
+      if (txt) { txt.setAttribute('x',cx); txt.setAttribute('y',cy) }
+      if (bg)  { bg.setAttribute('cx',cx); bg.setAttribute('cy',cy) }
+    }
+
+    moveAll(from.x, from.y)
+    svg.appendChild(animG)
+
+    // Tween — no camera movement, just the piece
+    const startTime = performance.now()
+    await new Promise(resolve => {
+      function step(now) {
+        const t    = Math.min((now - startTime) / DURATION, 1)
+        const ease = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2
+        const cx   = from.x + (to.x - from.x) * ease
+        const cy   = from.y + (to.y - from.y) * ease
+        moveAll(cx, cy)
+        if (t < 1) requestAnimationFrame(step)
+        else resolve()
+      }
+      requestAnimationFrame(step)
+    })
+
+    // Clean up and update local player state
+    animG.remove(); clip.remove()
+    const idx = allPlayers.findIndex(p => p.id === player.id)
+    if (idx > -1) allPlayers[idx] = { ...allPlayers[idx], ...player }
+    renderBoard()
+    renderSidePanel()
   }
 
   // ════════════════════════════════
