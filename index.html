@@ -729,9 +729,9 @@
   </div>
 </div>
 
-<!-- Staff view banner (shown when admin is in staff view) -->
+<!-- Staff view banner (shown when admin is in staff view or possessing) -->
 <div id="staff-view-banner" class="staff-view-banner" style="display:none;">
-  <span>👀 Viewing as Staff — changes are real!</span>
+  <span id="staff-view-label">👀 Viewing as Staff — changes are real!</span>
   <button onclick="exitStaffView()">← Back to Admin</button>
 </div>
 
@@ -812,8 +812,9 @@
   let boardSpaces    = []
   let allPlayers     = []
   let boardConfig    = {}
-  let currentTasks   = []   // tasks for current space colour
-  let avatarFileBlob = null
+  let currentTasks      = []   // tasks for current space colour
+  let avatarFileBlob    = null
+  let possessedPlayerId = null  // set when admin is possessing a player
 
   const SPACE_ICONS  = { green: '🟢', blue: '🔵', red: '🔴' }
   const SPACE_LABELS = { green: 'Green Space — Easy Tasks', blue: 'Blue Space — Monthly Tasks', red: 'Red Space — Hard Tasks' }
@@ -1361,7 +1362,7 @@
     const publicUrl = urlData.publicUrl + '?t=' + Date.now()
 
     // Save URL to profile
-    const { error: dbErr } = await sb.from('profiles').update({ avatar: publicUrl }).eq('id', currentUser.id)
+    const { error: dbErr } = await sb.from('profiles').update({ avatar: publicUrl }).eq('id', effectiveId())
     if (dbErr) {
       setAlert('avatar-upload-alert', `Save failed: ${dbErr.message}`)
       setLoading('avatar-save-btn', false, 'Save Avatar')
@@ -1512,12 +1513,15 @@
       : '🎟 No Tickets'
   }
 
+  // Returns the ID to write to — possessed player's ID if possessing, else own
+  function effectiveId() { return possessedPlayerId || currentUser.id }
+
   async function completeTask(taskId) {
     if ((currentProfile.space_tasks_completed || 0) >= 1) return
 
     const mySpace = currentProfile.current_space || 1
-    await sb.from('completed_tasks').insert({ player_id: currentUser.id, task_id: taskId, space_number: mySpace })
-    await sb.from('profiles').update({ space_tasks_completed: 1 }).eq('id', currentUser.id)
+    await sb.from('completed_tasks').insert({ player_id: effectiveId(), task_id: taskId, space_number: mySpace })
+    await sb.from('profiles').update({ space_tasks_completed: 1 }).eq('id', effectiveId())
     currentProfile.space_tasks_completed = 1
 
     renderPlayerBadge()
@@ -1567,8 +1571,8 @@
     const newBanked = [...banked, { id: task.id, title: task.title, colours: task.colours }]
     const mySpace   = currentProfile.current_space || 1
 
-    await sb.from('completed_tasks').insert({ player_id: currentUser.id, task_id: task.id, space_number: mySpace })
-    await sb.from('profiles').update({ banked_tasks: newBanked }).eq('id', currentUser.id)
+    await sb.from('completed_tasks').insert({ player_id: effectiveId(), task_id: task.id, space_number: mySpace })
+    await sb.from('profiles').update({ banked_tasks: newBanked }).eq('id', effectiveId())
     currentProfile.banked_tasks = newBanked
 
     closeModal('bank-modal')
@@ -1581,7 +1585,7 @@
     const banked = Array.isArray(currentProfile.banked_tasks) ? [...currentProfile.banked_tasks] : []
     banked.splice(idx, 1)
 
-    await sb.from('profiles').update({ banked_tasks: banked, space_tasks_completed: 1 }).eq('id', currentUser.id)
+    await sb.from('profiles').update({ banked_tasks: banked, space_tasks_completed: 1 }).eq('id', effectiveId())
     currentProfile.banked_tasks          = banked
     currentProfile.space_tasks_completed = 1
 
@@ -1598,7 +1602,7 @@
 
     await sb.from('profiles').update({
       current_space: newSpace, laps_completed: newLaps, space_tasks_completed: 0
-    }).eq('id', currentUser.id)
+    }).eq('id', effectiveId())
 
     currentProfile.current_space         = newSpace
     currentProfile.laps_completed        = newLaps
@@ -1621,7 +1625,7 @@
     if (!confirm('Use a skip ticket to skip this space?')) return
 
     const newTickets = currentProfile.skip_tickets - 1
-    await sb.from('profiles').update({ skip_tickets: newTickets, space_tasks_completed: 1 }).eq('id', currentUser.id)
+    await sb.from('profiles').update({ skip_tickets: newTickets, space_tasks_completed: 1 }).eq('id', effectiveId())
     currentProfile.skip_tickets          = newTickets
     currentProfile.space_tasks_completed = 1
 
@@ -1686,6 +1690,7 @@
         <td style="display:flex;gap:0.3rem;flex-wrap:wrap;">
           <button class="btn-xs btn-xs-blue" onclick="adminMovePlayer('${p.id}','${p.display_name}',${p.current_space||1})">Move</button>
           <button class="btn-xs btn-xs-grey" onclick="adminResetPlayer('${p.id}','${p.display_name}')">Reset</button>
+          <button class="btn-xs btn-xs-blue" onclick="adminPossessPlayer('${p.id}')">👤 Possess</button>
           ${p.is_test ? `<button class="btn-xs btn-xs-red" onclick="adminDeleteTestAccount('${p.id}','${p.display_name}')">Delete</button>` : ''}
         </td>
       </tr>`
@@ -1697,22 +1702,12 @@
           <div class="admin-section-title">🧪 Create Test Account</div>
         </div>
         <div class="admin-section-body">
-          <p style="font-size:0.82rem;color:var(--grey-light);">Creates a real staff account flagged as a test. You can log in with it to try features like skip tickets.</p>
+          <p style="font-size:0.82rem;color:var(--grey-light);">Creates a fake player on the board for testing. No login — just a profile you can move around and edit like any other player.</p>
           <div class="admin-form-row">
             <div class="admin-field">
               <label>Display Name</label>
-              <input class="admin-input" id="test-name" placeholder="e.g. Test User 1" />
+              <input class="admin-input" id="test-name" placeholder="e.g. Test Player 1" />
             </div>
-            <div class="admin-field">
-              <label>Email</label>
-              <input class="admin-input" id="test-email" type="email" placeholder="test@yourstore.com" />
-            </div>
-            <div class="admin-field" style="max-width:140px;">
-              <label>Password</label>
-              <input class="admin-input" id="test-password" type="text" placeholder="testpass123" />
-            </div>
-          </div>
-          <div class="admin-form-row">
             <div class="admin-field" style="max-width:160px;">
               <label>Starting Space</label>
               <input class="admin-input" id="test-space" type="number" placeholder="1" min="1" max="40" value="1" />
@@ -1721,7 +1716,7 @@
               <label>Skip Tickets</label>
               <input class="admin-input" id="test-tickets" type="number" placeholder="0" min="0" value="0" />
             </div>
-            <button class="btn btn-red" style="align-self:flex-end;" onclick="adminCreateTestAccount()">+ Create Test Account</button>
+            <button class="btn btn-red" style="align-self:flex-end;" onclick="adminCreateTestAccount()">+ Create</button>
           </div>
           <div id="test-account-alert"></div>
         </div>
@@ -1784,58 +1779,39 @@ Currently on space ${currentSpace}`)
   }
 
   async function adminCreateTestAccount() {
-    const name     = document.getElementById('test-name').value.trim()
-    const email    = document.getElementById('test-email').value.trim()
-    const password = document.getElementById('test-password').value.trim()
-    const space    = parseInt(document.getElementById('test-space').value) || 1
-    const tickets  = parseInt(document.getElementById('test-tickets').value) || 0
+    const name    = document.getElementById('test-name').value.trim()
+    const space   = parseInt(document.getElementById('test-space').value) || 1
+    const tickets = parseInt(document.getElementById('test-tickets').value) || 0
 
-    if (!name || !email || !password) { setAlert('test-account-alert', 'Please fill in name, email and password.'); return }
-    if (password.length < 6) { setAlert('test-account-alert', 'Password must be at least 6 characters.'); return }
+    if (!name) { setAlert('test-account-alert', 'Please enter a display name.'); return }
 
     setAlert('test-account-alert', '')
 
-    // Use a fake employee number for test accounts
-    const fakeEmpNum = 'TEST-' + Date.now()
-    await sb.from('employee_numbers').insert({ employee_number: fakeEmpNum, is_used: false })
+    // Generate a random UUID for the fake profile (no auth user needed)
+    const fakeId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16)
+    })
 
-    // Sign up via Supabase auth
-    const { data, error } = await sb.auth.signUp({
-      email,
-      password,
-      options: { data: { display_name: name, employee_number: fakeEmpNum } }
+    const { error } = await sb.from('profiles').insert({
+      id:                    fakeId,
+      display_name:          name,
+      employee_number:       'TEST-' + Date.now(),
+      role:                  'staff',
+      is_test:               true,
+      current_space:         space,
+      skip_tickets:          tickets,
+      laps_completed:        0,
+      space_tasks_completed: 0,
+      banked_tasks:          []
     })
 
     if (error) { setAlert('test-account-alert', error.message); return }
 
-    // Insert profile directly (bypass email confirmation)
-    const { error: profErr } = await sb.from('profiles').insert({
-      id:            data.user.id,
-      display_name:  name,
-      employee_number: fakeEmpNum,
-      role:          'staff',
-      is_test:       true,
-      current_space: space,
-      skip_tickets:  tickets,
-      laps_completed: 0,
-      space_tasks_completed: 0,
-      banked_tasks:  []
-    })
-
-    await sb.from('employee_numbers').update({ is_used: true }).eq('employee_number', fakeEmpNum)
-
-    if (profErr) { setAlert('test-account-alert', profErr.message); return }
-
-    setAlert('test-account-alert',
-      `✓ Test account created! Email: ${email} · Password: ${password} · Starting space: ${space}`,
-      'success')
-
-    document.getElementById('test-name').value     = ''
-    document.getElementById('test-email').value    = ''
-    document.getElementById('test-password').value = ''
-    document.getElementById('test-space').value    = '1'
-    document.getElementById('test-tickets').value  = '0'
-
+    setAlert('test-account-alert', `✓ Test player "${name}" created on space ${space}.`, 'success')
+    document.getElementById('test-name').value    = ''
+    document.getElementById('test-space').value   = '1'
+    document.getElementById('test-tickets').value = '0'
     adminRenderPlayers()
   }
 
@@ -2150,15 +2126,46 @@ Currently on space ${currentSpace}`)
       </div>`
   }
 
-  // ── STAFF VIEW ──
+  // ── STAFF VIEW + POSSESS ──
+  let adminProfileBackup = null   // stores real admin profile while possessing
+  let adminUserBackup    = null   // stores real admin user while possessing
+
   function enterStaffView() {
-    isStaffView = true
+    document.getElementById('staff-view-label').textContent = '👀 Viewing as Staff — changes are real!'
     document.getElementById('staff-view-banner').style.display = 'flex'
     initGame()
   }
 
+  async function adminPossessPlayer(playerId) {
+    const { data: target } = await sb.from('profiles').select('*').eq('id', playerId).single()
+    if (!target) { alert('Could not load player profile.'); return }
+
+    // Back up admin identity
+    adminProfileBackup = currentProfile
+    adminUserBackup    = currentUser
+
+    // Swap in target profile — keep currentUser as admin (writes still go through)
+    // but override currentProfile so the game renders as the target player
+    currentProfile = target
+
+    // Override the write user ID for game actions to target the possessed player
+    possessedPlayerId = playerId
+
+    document.getElementById('staff-view-label').textContent =
+      `👤 Possessing ${target.display_name} — all actions affect their account!`
+    document.getElementById('staff-view-banner').style.display = 'flex'
+    await initGame()
+  }
+
   function exitStaffView() {
-    isStaffView = false
+    // Restore admin identity if we were possessing
+    if (adminProfileBackup) {
+      currentProfile    = adminProfileBackup
+      currentUser       = adminUserBackup
+      adminProfileBackup = null
+      adminUserBackup    = null
+      possessedPlayerId  = null
+    }
     document.getElementById('staff-view-banner').style.display = 'none'
     showPage('admin')
     initAdmin()
