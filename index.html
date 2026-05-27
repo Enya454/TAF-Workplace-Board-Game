@@ -713,6 +713,7 @@
     </div>
     <div class="admin-sidebar-bottom">
       <button class="btn btn-blue btn-full btn-sm" onclick="enterStaffView()">👟 Staff View</button>
+      <button class="btn btn-ghost btn-full btn-sm" id="board-toggle-btn" onclick="toggleAdminOnBoard()" title="Toggle whether you appear on the game board">🎲 Show on Board: Off</button>
       <button class="btn btn-ghost btn-full btn-sm" onclick="handleSignOut()">Sign Out</button>
     </div>
   </div>
@@ -933,18 +934,33 @@
     showPage('game')
     const [spacesRes, playersRes, configRes] = await Promise.all([
       sb.from('board_spaces').select('*').order('position'),
-      sb.from('profiles').select('*').eq('role','staff').order('laps_completed',{ascending:false}),
+      sb.from('profiles').select('*').order('laps_completed',{ascending:false}),
       sb.from('board_config').select('*').single()
     ])
-    boardSpaces  = spacesRes.data  || []
-    allPlayers   = playersRes.data || []
-    boardConfig  = configRes.data  || { green_tasks_required:1, blue_tasks_required:2, red_tasks_required:3, total_spaces:40 }
+    boardSpaces = spacesRes.data  || []
+    boardConfig = configRes.data  || { green_tasks_required:1, blue_tasks_required:2, red_tasks_required:3, total_spaces:40 }
+
+    // Only show staff + admins who have opted in to appear on the board
+    allPlayers = (playersRes.data || []).filter(p =>
+      p.role === 'staff' || (p.role === 'admin' && p.appear_on_board)
+    )
+
     renderNav()
     renderPlayerBadge()
     renderBoard()
     renderSidePanel()
     renderSpaceBanner()
     await renderTaskPanel()
+  }
+
+  // Refresh allPlayers from DB and re-render board + panel
+  async function refreshPlayers() {
+    const { data } = await sb.from('profiles').select('*').order('laps_completed',{ascending:false})
+    allPlayers = (data || []).filter(p =>
+      p.role === 'staff' || (p.role === 'admin' && p.appear_on_board)
+    )
+    renderBoard()
+    renderSidePanel()
   }
 
   // ════════════════════════════════
@@ -1608,14 +1624,15 @@
     currentProfile.laps_completed        = newLaps
     currentProfile.space_tasks_completed = 0
 
-    const idx = allPlayers.findIndex(p => p.id === currentUser.id)
+    // Update allPlayers local cache using effectiveId (works for possessed players too)
+    const idx = allPlayers.findIndex(p => p.id === effectiveId())
     if (idx > -1) { allPlayers[idx].current_space = newSpace; allPlayers[idx].laps_completed = newLaps }
 
     if (isLastSpace) showCelebration(newLaps)
 
     renderPlayerBadge()
-    renderBoard()
-    renderSidePanel()
+    // Refresh all players from DB so board shows everyone's real position
+    await refreshPlayers()
     renderSpaceBanner()
     await renderTaskPanel()
   }
@@ -1641,6 +1658,7 @@
   let isStaffView  = false
 
   async function initAdmin() {
+    syncAdminBoardToggle()
     await adminNav('players')
   }
 
@@ -2169,6 +2187,22 @@ Currently on space ${currentSpace}`)
     document.getElementById('staff-view-banner').style.display = 'none'
     showPage('admin')
     initAdmin()
+  }
+
+  async function toggleAdminOnBoard() {
+    const current = currentProfile.appear_on_board || false
+    const newVal  = !current
+    await sb.from('profiles').update({ appear_on_board: newVal }).eq('id', currentUser.id)
+    currentProfile.appear_on_board = newVal
+    const btn = document.getElementById('board-toggle-btn')
+    if (btn) btn.textContent = `🎲 Show on Board: ${newVal ? 'On' : 'Off'}`
+  }
+
+  function syncAdminBoardToggle() {
+    const btn = document.getElementById('board-toggle-btn')
+    if (btn && currentProfile) {
+      btn.textContent = `🎲 Show on Board: ${currentProfile.appear_on_board ? 'On' : 'Off'}`
+    }
   }
 
 
