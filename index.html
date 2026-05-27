@@ -3280,13 +3280,24 @@ Currently on space ${currentSpace}`)
 
   async function applyShapeToBoard() {
     if (shapeNodes.length === 0) return
-    // Normalise positions to 0..1 for storage
+
+    // Normalise using bounding box of actual node positions (not canvas size)
+    // This is robust regardless of when/how shapeCanvasW was set
+    const allX = shapeNodes.map(n => n.x)
+    const allY = shapeNodes.map(n => n.y)
+    const minX = Math.min(...allX), maxX = Math.max(...allX)
+    const minY = Math.min(...allY), maxY = Math.max(...allY)
+    const rangeX = (maxX - minX) || 1
+    const rangeY = (maxY - minY) || 1
+
     const updates = shapeNodes.map(n => ({
       position: n.position,
       colour:   n.colour,
-      x:        parseFloat((n.x / shapeCanvasW).toFixed(4)),
-      y:        parseFloat((n.y / shapeCanvasH).toFixed(4))
+      x:        parseFloat(((n.x - minX) / rangeX).toFixed(4)),
+      y:        parseFloat(((n.y - minY) / rangeY).toFixed(4))
     }))
+
+    console.log('[Apply] Sample normalised coords:', updates[0], updates[1], updates[2])
 
     // Update all spaces
     const promises = updates.map(u =>
@@ -3308,10 +3319,14 @@ Currently on space ${currentSpace}`)
   async function adminSaveShape() {
     const name = document.getElementById('save-shape-name')?.value.trim()
     if (!name) { setAlert('shape-save-alert','Please enter a name.'); return }
+    const allX2 = shapeNodes.map(n => n.x), allY2 = shapeNodes.map(n => n.y)
+    const minX2 = Math.min(...allX2), maxX2 = Math.max(...allX2)
+    const minY2 = Math.min(...allY2), maxY2 = Math.max(...allY2)
+    const rangeX2 = (maxX2 - minX2) || 1, rangeY2 = (maxY2 - minY2) || 1
     const positions = shapeNodes.map(n => ({
       position: n.position, colour: n.colour,
-      x: parseFloat((n.x / shapeCanvasW).toFixed(4)),
-      y: parseFloat((n.y / shapeCanvasH).toFixed(4))
+      x: parseFloat(((n.x - minX2) / rangeX2).toFixed(4)),
+      y: parseFloat(((n.y - minY2) / rangeY2).toFixed(4))
     }))
     const { error } = await sb.from('saved_shapes').insert({ name, positions })
     if (error) { setAlert('shape-save-alert', error.message); return }
