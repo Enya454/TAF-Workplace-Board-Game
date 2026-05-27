@@ -2640,7 +2640,7 @@ Currently on space ${currentSpace}`)
   let shapeDragIdx   = -1   // which node is being dragged
   let shapeTool      = 'move'  // 'move' | 'add' | 'delete'
   let shapeCanvasW   = 600
-  let shapeCanvasH   = 680
+  let shapeCanvasH   = 900
 
   // ── Board shape presets ──
   const BOARD_SHAPES = {
@@ -2818,7 +2818,7 @@ Currently on space ${currentSpace}`)
             <div class="shape-tool shape-preset-btn"        id="spreset-wave"      onclick="loadPresetShape('wave')">🌊 Wave</div>
           </div>
           <div class="shape-canvas-wrap">
-            <canvas id="shape-canvas" height="680"></canvas>
+            <canvas id="shape-canvas" height="900"></canvas>
           </div>
           <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;">
             <button class="btn btn-red" onclick="applyShapeToBoard()">✓ Apply Shape to Board</button>
@@ -3068,7 +3068,7 @@ Currently on space ${currentSpace}`)
     }
 
     // Auto-scale pts to fill more of the canvas with generous padding
-    const PAD = 40
+    const PAD = 60
     const allX = pts.map(p => p.x), allY = pts.map(p => p.y)
     const minX = Math.min(...allX), maxX = Math.max(...allX)
     const minY = Math.min(...allY), maxY = Math.max(...allY)
@@ -3105,54 +3105,99 @@ Currently on space ${currentSpace}`)
 
     // Background grid dots
     ctx.fillStyle = 'rgba(255,255,255,0.04)'
-    for (let x = 20; x < shapeCanvasW; x += 40) {
-      for (let y = 20; y < shapeCanvasH; y += 40) {
+    for (let x = 30; x < shapeCanvasW; x += 50) {
+      for (let y = 30; y < shapeCanvasH; y += 50) {
         ctx.beginPath(); ctx.arc(x, y, 1.5, 0, Math.PI*2); ctx.fill()
       }
     }
 
     if (shapeNodes.length === 0) return
 
-    // Draw path
+    // Draw connector path with arrow direction hints
     ctx.beginPath()
     ctx.moveTo(shapeNodes[0].x, shapeNodes[0].y)
     shapeNodes.forEach((n,i) => { if (i > 0) ctx.lineTo(n.x, n.y) })
-    ctx.strokeStyle = 'rgba(255,255,255,0.12)'
-    ctx.lineWidth = 2
-    ctx.setLineDash([6, 6])
+    ctx.strokeStyle = 'rgba(255,255,255,0.15)'
+    ctx.lineWidth = 2.5
+    ctx.setLineDash([8, 8])
     ctx.stroke()
     ctx.setLineDash([])
 
-    // Draw nodes
-    const R = 14
+    // Draw small directional arrows every ~5 spaces
+    ctx.fillStyle = 'rgba(255,255,255,0.2)'
+    for (let i = 4; i < shapeNodes.length; i += 5) {
+      const a = shapeNodes[i-1], b = shapeNodes[i]
+      const angle = Math.atan2(b.y - a.y, b.x - a.x)
+      const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2
+      ctx.save()
+      ctx.translate(mx, my); ctx.rotate(angle)
+      ctx.beginPath()
+      ctx.moveTo(6, 0); ctx.lineTo(-4, -4); ctx.lineTo(-4, 4)
+      ctx.closePath(); ctx.fill()
+      ctx.restore()
+    }
+
+    // Draw regular nodes
+    const R = 18
+    const COLOURS = {
+      green: { fill:'rgba(34,197,94,0.25)',  stroke:'#22c55e', glow:'rgba(34,197,94,0.5)'  },
+      blue:  { fill:'rgba(59,130,246,0.25)', stroke:'#3b82f6', glow:'rgba(59,130,246,0.5)' },
+      red:   { fill:'rgba(232,17,45,0.25)',  stroke:'#E8112D', glow:'rgba(232,17,45,0.5)'  },
+    }
+
     shapeNodes.forEach((n, i) => {
-      const colours = { green:['rgba(34,197,94,0.3)','#22c55e'], blue:['rgba(59,130,246,0.3)','#3b82f6'], red:['rgba(232,17,45,0.3)','#E8112D'] }
-      const [fill, stroke] = colours[n.colour] || colours.green
+      const isStart = i === 0
+      const isEnd   = i === shapeNodes.length - 1
+      const c = COLOURS[n.colour] || COLOURS.green
+      const r = isStart || isEnd ? R + 6 : R
 
-      ctx.beginPath(); ctx.arc(n.x, n.y, R, 0, Math.PI*2)
-      ctx.fillStyle = fill; ctx.fill()
-      ctx.strokeStyle = stroke; ctx.lineWidth = 2; ctx.stroke()
+      // Glow for start/end
+      if (isStart || isEnd) {
+        const glowColor = isStart ? 'rgba(34,197,94,0.25)' : 'rgba(245,158,11,0.25)'
+        ctx.beginPath(); ctx.arc(n.x, n.y, r + 10, 0, Math.PI*2)
+        ctx.fillStyle = glowColor; ctx.fill()
+      }
 
-      // Number label
+      // Node circle
+      ctx.beginPath(); ctx.arc(n.x, n.y, r, 0, Math.PI*2)
+      ctx.fillStyle = isStart ? 'rgba(34,197,94,0.4)' : isEnd ? 'rgba(245,158,11,0.35)' : c.fill
+      ctx.fill()
+      ctx.strokeStyle = isStart ? '#22c55e' : isEnd ? '#f59e0b' : c.stroke
+      ctx.lineWidth = isStart || isEnd ? 3 : 2
+      ctx.stroke()
+
+      // Number
       ctx.fillStyle = '#fff'
-      ctx.font = `bold ${R < 12 ? 8 : 10}px "Barlow Condensed", sans-serif`
+      ctx.font = `800 ${isStart || isEnd ? 13 : 11}px "Barlow Condensed", sans-serif`
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
       ctx.fillText(n.position, n.x, n.y)
 
-      // Start/end markers
-      if (i === 0) {
-        ctx.fillStyle = '#22c55e'; ctx.font = 'bold 9px sans-serif'
-        ctx.fillText('START', n.x, n.y - R - 6)
+      // START label — big badge above
+      if (isStart) {
+        const lw = 52, lh = 20, lx = n.x - lw/2, ly = n.y - r - 28
+        ctx.beginPath()
+        ctx.roundRect(lx, ly, lw, lh, 6)
+        ctx.fillStyle = '#22c55e'; ctx.fill()
+        ctx.fillStyle = '#000'
+        ctx.font = '800 11px "Barlow Condensed", sans-serif'
+        ctx.fillText('🟢 START', n.x, ly + lh/2)
       }
-      if (i === shapeNodes.length - 1) {
-        ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 9px sans-serif'
-        ctx.fillText('END', n.x, n.y - R - 6)
+
+      // END label — big badge above
+      if (isEnd) {
+        const lw = 46, lh = 20, lx = n.x - lw/2, ly = n.y - r - 28
+        ctx.beginPath()
+        ctx.roundRect(lx, ly, lw, lh, 6)
+        ctx.fillStyle = '#f59e0b'; ctx.fill()
+        ctx.fillStyle = '#000'
+        ctx.font = '800 11px "Barlow Condensed", sans-serif'
+        ctx.fillText('🏁 END', n.x, ly + lh/2)
       }
     })
   }
 
   function getNodeAt(x, y) {
-    const R = 16
+    const R = 22
     return shapeNodes.findIndex(n => Math.hypot(n.x - x, n.y - y) < R)
   }
 
@@ -3194,8 +3239,8 @@ Currently on space ${currentSpace}`)
       if (!dragging || shapeDragIdx < 0) return
       e.preventDefault()
       const {x, y} = getPos(e)
-      shapeNodes[shapeDragIdx].x = Math.max(14, Math.min(shapeCanvasW - 14, x))
-      shapeNodes[shapeDragIdx].y = Math.max(14, Math.min(shapeCanvasH - 14, y))
+      shapeNodes[shapeDragIdx].x = Math.max(30, Math.min(shapeCanvasW - 30, x))
+      shapeNodes[shapeDragIdx].y = Math.max(30, Math.min(shapeCanvasH - 30, y))
       drawShapeCanvas()
     }
 
