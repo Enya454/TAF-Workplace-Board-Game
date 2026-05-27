@@ -4291,12 +4291,18 @@ Currently on space ${currentSpace}`)
   }
 
   async function adminRenderAuditLog() {
-    // Supervisors only see their own + other supervisors' logs (not admin logs)
-    let query = sb.from('admin_logs').select('*, profiles!admin_logs_admin_id_fkey(role)')
-      .order('created_at', { ascending: false }).limit(200)
-    const { data: logs } = await query
+    const { data: logs, error } = await sb.from('admin_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(200)
+    if (error) {
+      document.getElementById('admin-content').innerHTML =
+        `<div style="color:#ff7088;padding:1rem;">${error.message}</div>`
+      return
+    }
+    // Supervisors only see non-admin logs
     const filtered = isSupervisor()
-      ? (logs||[]).filter(l => !l.profiles || l.profiles.role !== 'admin')
+      ? (logs||[]).filter(l => l.admin_name && !adminNames.has(l.admin_id))
       : (logs||[])
     const el = document.getElementById('admin-content')
 
@@ -4325,28 +4331,51 @@ Currently on space ${currentSpace}`)
   }
 
   // ── TASK HISTORY ──
-  async function adminRenderHistory() {
-    const { data: logs } = await sb.from('completed_tasks')
-      .select('*, profiles(display_name), tasks(title, colours)')
-      .order('completed_at', { ascending: false })
-      .limit(100)
-    const content = document.getElementById('admin-content')
+  async function adminRenderHistory(filterPlayerId = null, filterPlayerName = null) {
+    const el = document.getElementById('admin-content')
+    el.innerHTML = '<div style="color:var(--grey);text-align:center;padding:3rem;"><span class="spinner" style="width:28px;height:28px;border-width:3px;"></span></div>'
 
-    const rows = (filtered||[]).map(l => {
-      const date  = new Date(l.completed_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
-      const pips  = (l.tasks?.colours||[]).map(c => `<div class="task-colour-pip ${c}" style="display:inline-block;"></div>`).join(' ')
+    let query = sb.from('completed_tasks')
+      .select('*, profiles!completed_tasks_player_id_fkey(id, display_name), tasks(title, colours)')
+      .order('completed_at', { ascending: false })
+      .limit(200)
+
+    if (filterPlayerId) query = query.eq('player_id', filterPlayerId)
+
+    const { data: logs, error } = await query
+
+    if (error) { el.innerHTML = `<div style="color:#ff7088;padding:1rem;">${error.message}</div>`; return }
+
+    const rows = (logs||[]).map(l => {
+      const date     = new Date(l.completed_at).toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })
+      const pips     = (l.tasks?.colours||[]).map(c => `<div class="task-colour-pip ${c}" style="display:inline-block;"></div>`).join(' ')
+      const playerName = l.profiles?.display_name || '—'
+      const playerId   = l.profiles?.id
       return `<tr>
-        <td>${l.profiles?.display_name || '—'}</td>
-        <td><div style="display:flex;gap:3px;align-items:center;">${pips} ${l.tasks?.title || 'Deleted task'}</div></td>
+        <td>
+          ${isSupervisorOrAbove() && playerId
+            ? `<a href="#" style="color:var(--red);text-decoration:none;font-weight:600;"
+                onclick="event.preventDefault();adminRenderHistory('${playerId}','${playerName.replace(/'/g,"\'")}');return false;"
+               >${playerName}</a>`
+            : playerName}
+        </td>
+        <td><div style="display:flex;gap:4px;align-items:center;">${pips} ${l.tasks?.title || '<span style="color:var(--grey);">Deleted task</span>'}</div></td>
         <td>Space ${l.space_number||'—'}</td>
         <td style="color:var(--grey);font-size:0.78rem;">${date}</td>
       </tr>`
     }).join('')
 
-    content.innerHTML = `
+    const title = filterPlayerName
+      ? `${filterPlayerName}'s Task History (${(logs||[]).length})`
+      : `All Task History — last 200`
+
+    el.innerHTML = `
       <div class="admin-section">
         <div class="admin-section-header">
-          <div class="admin-section-title">Recent Completions (last 100)</div>
+          <div class="admin-section-title">${title}</div>
+          ${filterPlayerName
+            ? `<button class="btn-xs btn-xs-grey" onclick="adminRenderHistory()">← All Players</button>`
+            : ''}
         </div>
         <div style="overflow-x:auto;">
           <table class="admin-table">
