@@ -318,31 +318,7 @@
       padding: 1rem; display: flex; flex-direction: column; gap: 0.6rem;
     }
 
-    /* ── Mobile responsive ── */
-    @media (max-width: 700px) {
-      /* Game */
-      .side-panel { display: none; }
-      .board-area { padding: 0.75rem; }
-      .top-info-row { flex-direction: column; }
-      .task-panel { min-height: 160px; }
-      .advance-wrap { flex-direction: column; }
-      .btn-advance, .btn-skip { width: 100%; }
-
-      /* Admin — hide desktop sidebar, show bottom tabs */
-      #page-admin { flex-direction: column; }
-      .admin-sidebar { display: none; }
-      .admin-bottom-tabs { display: flex; }
-      .admin-main { flex: 1; overflow-y: auto; padding-bottom: 60px; }
-      .admin-topbar { padding: 0.75rem 1rem; }
-      .admin-content { padding: 0.85rem; gap: 0.85rem; }
-      .config-grid { grid-template-columns: 1fr 1fr; }
-      .admin-form-row { flex-direction: column; }
-      .admin-table { font-size: 0.78rem; }
-      .admin-table th, .admin-table td { padding: 0.4rem 0.5rem; }
-      .board-editor-grid { grid-template-columns: repeat(8, 1fr); }
-      .shape-toolbar { gap: 0.35rem; }
-      .shape-tool { padding: 0.35rem 0.55rem; font-size: 0.72rem; }
-    }
+    /* mobile styles moved to end of CSS */
 
     /* ── Board curve builder ── */
     .curve-presets { display: flex; gap: 0.5rem; flex-wrap: wrap; }
@@ -689,6 +665,32 @@
       overflow: hidden; border: 1.5px solid rgba(255,255,255,0.15);
     }
     .tooltip-av img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* ── Mobile responsive (must be last to override earlier rules) ── */
+    @media (max-width: 700px) {
+      /* Game */
+      .side-panel { display: none !important; }
+      .board-area { padding: 0.75rem; }
+      .top-info-row { flex-direction: column; }
+      .task-panel { min-height: 160px; }
+      .advance-wrap { flex-direction: column; }
+      .btn-advance, .btn-skip { width: 100%; }
+
+      /* Admin — hide desktop sidebar, show bottom tabs */
+      #page-admin { flex-direction: column; }
+      .admin-sidebar { display: none !important; }
+      .admin-bottom-tabs { display: flex !important; }
+      .admin-main { flex: 1; overflow-y: auto; padding-bottom: 60px; }
+      .admin-topbar { padding: 0.75rem 1rem; }
+      .admin-content { padding: 0.85rem; gap: 0.85rem; }
+      .config-grid { grid-template-columns: 1fr 1fr; }
+      .admin-form-row { flex-direction: column; }
+      .admin-table { font-size: 0.78rem; }
+      .admin-table th, .admin-table td { padding: 0.4rem 0.5rem; }
+      .board-editor-grid { grid-template-columns: repeat(8, 1fr); }
+      .shape-toolbar { gap: 0.35rem; }
+      .shape-tool { padding: 0.35rem 0.55rem; font-size: 0.72rem; }
+    }
   </style>
 </head>
 <body>
@@ -2885,12 +2887,201 @@ Currently on space ${currentSpace}`)
     if (canvas) canvas.style.cursor = tool === 'add' ? 'copy' : tool === 'delete' ? 'not-allowed' : 'grab'
   }
 
-  function loadTAFShape() {
-    const total = shapeNodes.length || 30
-    shapeNodes = Array.from({length: total}, (_, i) => {
-      const pt = TAF_SHAPE[Math.round(i / (total-1) * (TAF_SHAPE.length-1))]
-      return { position: i+1, colour: shapeNodes[i]?.colour || 'green', x: pt.x * shapeCanvasW, y: pt.y * shapeCanvasH }
-    })
+  function loadTAFShape() { loadPresetShape('sneaker') }
+
+  function loadPresetShape(name) {
+    const W = shapeCanvasW || 600
+    const H = shapeCanvasH || 420
+
+    // Generate N evenly-spaced points along a given shape function
+    function makeShape(fn, N) {
+      return Array.from({length: N}, (_, i) => fn(i, N, W, H))
+    }
+
+    const N = shapeNodes.length || 32
+    let pts = []
+
+    switch(name) {
+
+      case 'sneaker': {
+        // Shoe silhouette — interpolate through control points
+        const ctrl = [
+          [0.12,0.75],[0.10,0.63],[0.10,0.52],[0.13,0.42],
+          [0.18,0.34],[0.25,0.27],[0.33,0.23],[0.42,0.21],
+          [0.51,0.20],[0.60,0.21],[0.68,0.24],[0.75,0.29],
+          [0.80,0.35],[0.84,0.42],[0.86,0.49],[0.87,0.57],
+          [0.85,0.64],[0.81,0.70],[0.74,0.74],[0.63,0.76],
+          [0.51,0.77],[0.40,0.76],[0.30,0.75],[0.22,0.74],[0.15,0.75]
+        ]
+        pts = Array.from({length: N}, (_, i) => {
+          const t  = i / (N - 1) * (ctrl.length - 1)
+          const i0 = Math.min(Math.floor(t), ctrl.length - 2)
+          const f  = t - i0
+          return { x: (ctrl[i0][0] + (ctrl[i0+1][0] - ctrl[i0][0]) * f) * W,
+                   y: (ctrl[i0][1] + (ctrl[i0+1][1] - ctrl[i0][1]) * f) * H }
+        })
+        break
+      }
+
+      case 'sinewave': {
+        // Snake path — rows go left/right alternating with sine vertical offset
+        const COLS = 8
+        pts = Array.from({length: N}, (_, i) => {
+          const row = Math.floor(i / COLS)
+          const col = i % COLS
+          const goRight = row % 2 === 0
+          const cx = goRight ? 0.08 + col / (COLS-1) * 0.84 : 0.92 - col / (COLS-1) * 0.84
+          const rows = Math.ceil(N / COLS)
+          const rowH = 0.85 / Math.max(rows - 1, 1)
+          const cy = 0.08 + row * rowH - Math.sin((col / (COLS-1)) * Math.PI) * rowH * 0.35
+          return { x: cx * W, y: cy * H }
+        })
+        break
+      }
+
+      case 'spiral': {
+        // Archimedean spiral — evenly spaced, no overlap
+        pts = Array.from({length: N}, (_, i) => {
+          const t     = i / (N - 1)
+          const turns = 2.5
+          const angle = t * Math.PI * 2 * turns
+          const r     = 0.42 - t * 0.33   // shrinks from 0.42 to 0.09
+          return { x: (0.50 + r * Math.cos(angle - Math.PI/2)) * W,
+                   y: (0.50 + r * Math.sin(angle - Math.PI/2) * 0.9) * H }
+        })
+        break
+      }
+
+      case 'star': {
+        // 5-pointed star traced around perimeter evenly
+        const STAR_POINTS = 5
+        const outerR = 0.40, innerR = 0.17
+        const totalPts = STAR_POINTS * 2  // 10 vertices
+        pts = Array.from({length: N}, (_, i) => {
+          const t     = i / N * totalPts
+          const vi    = Math.floor(t)
+          const frac  = t - vi
+          const a0    = (vi / totalPts) * Math.PI * 2 - Math.PI / 2
+          const a1    = ((vi + 1) / totalPts) * Math.PI * 2 - Math.PI / 2
+          const r0    = vi % 2 === 0 ? outerR : innerR
+          const r1    = vi % 2 === 0 ? innerR : outerR
+          const x0    = 0.50 + r0 * Math.cos(a0), y0 = 0.50 + r0 * Math.sin(a0) * 0.95
+          const x1    = 0.50 + r1 * Math.cos(a1), y1 = 0.50 + r1 * Math.sin(a1) * 0.95
+          return { x: (x0 + (x1 - x0) * frac) * W, y: (y0 + (y1 - y0) * frac) * H }
+        })
+        break
+      }
+
+      case 'heart': {
+        pts = Array.from({length: N}, (_, i) => {
+          const t = (i / N) * Math.PI * 2
+          const x = 0.50 + 0.30 * Math.pow(Math.sin(t), 3)
+          const y = 0.54 - 0.24 * Math.cos(t) + 0.08 * Math.cos(2*t)
+                       + 0.03 * Math.cos(3*t) + 0.01 * Math.cos(4*t)
+          return { x: x * W, y: y * H }
+        })
+        break
+      }
+
+      case 'figure8': {
+        // Lemniscate of Bernoulli — proper figure-8, no self-overlap
+        pts = Array.from({length: N}, (_, i) => {
+          const t   = (i / N) * Math.PI * 2
+          const den = 1 + Math.pow(Math.sin(t), 2)
+          const x   = 0.50 + 0.38 * Math.cos(t) / den
+          const y   = 0.50 + 0.32 * Math.sin(t) * Math.cos(t) / den
+          return { x: x * W, y: y * H }
+        })
+        break
+      }
+
+      case 'circle': {
+        pts = Array.from({length: N}, (_, i) => {
+          const t = (i / N) * Math.PI * 2 - Math.PI / 2
+          return { x: (0.50 + 0.40 * Math.cos(t)) * W,
+                   y: (0.50 + 0.40 * Math.sin(t)) * H }
+        })
+        break
+      }
+
+      case 'track': {
+        // Stadium oval — flat top/bottom, curved ends
+        const straightFrac = 0.35  // fraction of perimeter that is straight
+        const perim = 2 * Math.PI * 0.28 + 4 * straightFrac  // approx
+        pts = Array.from({length: N}, (_, i) => {
+          const t = i / N  // 0..1 around the track
+          // Divide into 4 segments: top-straight, right-curve, bottom-straight, left-curve
+          let x, y
+          if (t < 0.25) {
+            // Top straight (left→right)
+            const s = t / 0.25
+            x = 0.15 + s * 0.70; y = 0.25
+          } else if (t < 0.50) {
+            // Right curve (top→bottom)
+            const a = ((t - 0.25) / 0.25) * Math.PI
+            x = 0.85 + 0.13 * Math.sin(a); y = 0.25 + 0.50 * (1 - Math.cos(a)) / 2
+          } else if (t < 0.75) {
+            // Bottom straight (right→left)
+            const s = (t - 0.50) / 0.25
+            x = 0.85 - s * 0.70; y = 0.75
+          } else {
+            // Left curve (bottom→top)
+            const a = ((t - 0.75) / 0.25) * Math.PI
+            x = 0.15 - 0.13 * Math.sin(a); y = 0.75 - 0.50 * (1 - Math.cos(a)) / 2
+          }
+          return { x: x * W, y: y * H }
+        })
+        break
+      }
+
+      case 'lightning': {
+        // Clean lightning bolt — no overlaps, clear zigzag
+        const ctrl = [
+          [0.60,0.06],[0.48,0.06],[0.38,0.22],[0.50,0.22],
+          [0.38,0.42],[0.52,0.42],[0.36,0.64],[0.50,0.64],
+          [0.32,0.84],[0.44,0.84],[0.56,0.64],[0.42,0.64],
+          [0.58,0.42],[0.44,0.42],[0.56,0.22],[0.44,0.22],
+          [0.60,0.06]
+        ]
+        pts = Array.from({length: N}, (_, i) => {
+          const t  = i / (N-1) * (ctrl.length-1)
+          const i0 = Math.min(Math.floor(t), ctrl.length-2)
+          const f  = t - i0
+          return { x: (ctrl[i0][0] + (ctrl[i0+1][0]-ctrl[i0][0])*f)*W,
+                   y: (ctrl[i0][1] + (ctrl[i0+1][1]-ctrl[i0][1])*f)*H }
+        })
+        break
+      }
+
+      case 'wave': {
+        // Smooth wave — spaces well-spread horizontally
+        pts = Array.from({length: N}, (_, i) => {
+          const t = i / (N-1)
+          return { x: (0.06 + t * 0.88) * W,
+                   y: (0.50 + 0.30 * Math.sin(t * Math.PI * 2.5)) * H }
+        })
+        break
+      }
+
+      default:
+        return
+    }
+
+    // Build shapeNodes preserving existing colours where possible
+    const colours = ['green','green','green','blue','blue','red','red']
+    shapeNodes = pts.map((pt, i) => ({
+      position: i + 1,
+      colour: shapeNodes[i]?.colour || (
+        i < pts.length * 0.45 ? 'green' : i < pts.length * 0.72 ? 'blue' : 'red'
+      ),
+      x: Math.max(14, Math.min(W - 14, pt.x)),
+      y: Math.max(14, Math.min(H - 14, pt.y))
+    }))
+
+    // Mark active preset
+    document.querySelectorAll('.shape-preset-btn').forEach(b => b.classList.remove('active'))
+    document.getElementById('spreset-' + name)?.classList.add('active')
+
     updateShapeCount()
     drawShapeCanvas()
   }
