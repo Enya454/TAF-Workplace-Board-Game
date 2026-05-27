@@ -237,15 +237,15 @@
     .space-blue-fill  { fill: var(--blue-s-bg); stroke: var(--blue-s-border); stroke-width: 2; }
     .space-red-fill   { fill: var(--red-s-bg);  stroke: var(--red-s-border);  stroke-width: 2; }
 
-    .space-green-fill.mine { fill: rgba(34,197,94,0.3);  stroke: var(--green);  stroke-width: 3; filter: drop-shadow(0 0 8px rgba(34,197,94,0.6)); }
-    .space-blue-fill.mine  { fill: rgba(59,130,246,0.3); stroke: var(--blue-s); stroke-width: 3; filter: drop-shadow(0 0 8px rgba(59,130,246,0.6)); }
-    .space-red-fill.mine   { fill: rgba(232,17,45,0.3);  stroke: var(--red);    stroke-width: 3; filter: drop-shadow(0 0 8px rgba(232,17,45,0.6)); }
+    .space-green-fill.mine { fill: rgba(34,197,94,0.35);  stroke: var(--green);  stroke-width: 6; }
+    .space-blue-fill.mine  { fill: rgba(59,130,246,0.35); stroke: var(--blue-s); stroke-width: 6; }
+    .space-red-fill.mine   { fill: rgba(232,17,45,0.35);  stroke: var(--red);    stroke-width: 6; }
 
     /* Path connector */
     .board-path { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 3; stroke-dasharray: 6 6; }
 
     /* Space number text */
-    .space-label { font-family: 'Barlow Condensed', sans-serif; font-size: 11px; font-weight: 700; fill: rgba(255,255,255,0.45); text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
+    .space-label { font-family: 'Barlow Condensed', sans-serif; font-size: 26px; font-weight: 700; fill: rgba(255,255,255,0.55); text-anchor: middle; dominant-baseline: middle; pointer-events: none; }
 
     /* Avatar image clipped to circle */
     .av-clip { /* defined per space via clipPath */ }
@@ -1150,8 +1150,8 @@
 
   // ── Board camera state ──
   let boardPositions  = []    // [{x,y}] pixel positions for each space
-  let boardSvgW       = 1000  // logical SVG width
-  let boardSvgH       = 800   // logical SVG height
+  let boardSvgW       = 3000  // logical SVG width — high res
+  let boardSvgH       = 2400  // logical SVG height
   let cameraScale     = 1
   let cameraX         = 0
   let cameraY         = 0
@@ -1594,93 +1594,99 @@
     const svg = document.getElementById('board-svg')
     if (!svg) return
 
-    // Create a temporary animated avatar circle
     const fromIdx = fromSpace - 1
     const toIdx   = toSpace - 1
     if (!boardPositions[fromIdx] || !boardPositions[toIdx]) return
 
-    const svgRenderedW = svg.getBoundingClientRect().width
-    const svgScale = svgRenderedW / boardSvgW
-
     const from = boardPositions[fromIdx]
     const to   = boardPositions[toIdx]
+    const ANIM_R = 30
 
-    // Create moving avatar element in SVG
-    const ANIM_R = 14
+    // Focus on from space
+    boardFocusPosition(fromIdx, true, 3)
+    await new Promise(r => setTimeout(r, 350))
+
+    // Build animated avatar
     const animG = document.createElementNS('http://www.w3.org/2000/svg','g')
-    animG.setAttribute('id', 'anim-avatar')
-    animG.style.transition = 'none'
+    animG.setAttribute('id','anim-avatar')
 
-    const animCirc = document.createElementNS('http://www.w3.org/2000/svg','circle')
-    animCirc.setAttribute('cx', from.x); animCirc.setAttribute('cy', from.y)
-    animCirc.setAttribute('r', ANIM_R + 4)
-    animCirc.setAttribute('fill', 'rgba(255,255,255,0.15)')
-    animCirc.setAttribute('stroke', '#fff')
-    animCirc.setAttribute('stroke-width', '2.5')
-    animG.appendChild(animCirc)
+    const halo = document.createElementNS('http://www.w3.org/2000/svg','circle')
+    halo.setAttribute('cx', from.x); halo.setAttribute('cy', from.y)
+    halo.setAttribute('r', ANIM_R + 14)
+    halo.setAttribute('fill', 'rgba(255,255,255,0.1)')
+    animG.appendChild(halo)
 
-    // Add player initials/avatar inside
+    const ring = document.createElementNS('http://www.w3.org/2000/svg','circle')
+    ring.setAttribute('cx', from.x); ring.setAttribute('cy', from.y)
+    ring.setAttribute('r', ANIM_R + 4)
+    ring.setAttribute('fill', 'rgba(0,0,0,0.5)')
+    ring.setAttribute('stroke', '#fff'); ring.setAttribute('stroke-width', '4')
+    animG.appendChild(ring)
+
+    const clipId = 'anim-clip-' + Date.now()
+    const defsEl = svg.querySelector('defs') || svg.insertBefore(document.createElementNS('http://www.w3.org/2000/svg','defs'), svg.firstChild)
+    const clip   = document.createElementNS('http://www.w3.org/2000/svg','clipPath')
+    clip.setAttribute('id', clipId)
+    const cc = document.createElementNS('http://www.w3.org/2000/svg','circle')
+    cc.setAttribute('cx', from.x); cc.setAttribute('cy', from.y); cc.setAttribute('r', ANIM_R)
+    clip.appendChild(cc); defsEl.appendChild(clip)
+
     const url = getAvatarUrl(currentProfile)
     if (url) {
-      const clipId = 'anim-clip'
-      const defs   = svg.querySelector('defs') || svg.insertBefore(document.createElementNS('http://www.w3.org/2000/svg','defs'), svg.firstChild)
-      const clip   = document.createElementNS('http://www.w3.org/2000/svg','clipPath')
-      clip.setAttribute('id', clipId)
-      const cc = document.createElementNS('http://www.w3.org/2000/svg','circle')
-      cc.setAttribute('cx', from.x); cc.setAttribute('cy', from.y); cc.setAttribute('r', ANIM_R)
-      clip.appendChild(cc); defs.appendChild(clip)
       const img = document.createElementNS('http://www.w3.org/2000/svg','image')
       img.setAttribute('href', url)
       img.setAttribute('x', from.x - ANIM_R); img.setAttribute('y', from.y - ANIM_R)
       img.setAttribute('width', ANIM_R * 2); img.setAttribute('height', ANIM_R * 2)
       img.setAttribute('clip-path', `url(#${clipId})`)
-      img.setAttribute('preserveAspectRatio', 'xMidYMid slice')
+      img.setAttribute('preserveAspectRatio','xMidYMid slice')
       animG.appendChild(img)
     } else {
+      const bg = document.createElementNS('http://www.w3.org/2000/svg','circle')
+      bg.setAttribute('cx', from.x); bg.setAttribute('cy', from.y); bg.setAttribute('r', ANIM_R)
+      bg.setAttribute('fill', stringToColour(currentProfile.id || currentProfile.display_name))
+      bg.setAttribute('clip-path', `url(#${clipId})`)
+      animG.appendChild(bg)
       const txt = document.createElementNS('http://www.w3.org/2000/svg','text')
       txt.setAttribute('x', from.x); txt.setAttribute('y', from.y)
       txt.setAttribute('text-anchor','middle'); txt.setAttribute('dominant-baseline','middle')
-      txt.setAttribute('fill','#fff'); txt.setAttribute('font-size','11')
-      txt.setAttribute('font-family','Barlow Condensed, sans-serif'); txt.setAttribute('font-weight','800')
+      txt.setAttribute('fill','#fff'); txt.setAttribute('font-weight','900')
+      txt.setAttribute('font-family','Barlow Condensed, sans-serif')
+      txt.setAttribute('font-size','24')
       txt.textContent = initials(currentProfile.display_name)
       animG.appendChild(txt)
     }
-
     svg.appendChild(animG)
 
-    // Focus camera on current space first
-    boardFocusPosition(fromIdx, true, 3)
-    await new Promise(r => setTimeout(r, 400))
-
-    // Animate movement using SVG SMIL or CSS animation via transform
-    // We'll use a JS animation loop for smooth cross-browser support
-    const DURATION = 800
+    // Tween avatar from→to, camera follows
+    const DURATION = 700
     const start    = performance.now()
+    const vbParts  = svg.getAttribute('viewBox')?.split(' ') || []
+    const vbOffY   = parseFloat(vbParts[1]) || 0
+    const ns       = getSvgNativeScale()
 
     await new Promise(resolve => {
       function step(now) {
         const t    = Math.min((now - start) / DURATION, 1)
-        const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t   // ease in-out quad
+        const ease = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2
         const cx   = from.x + (to.x - from.x) * ease
         const cy   = from.y + (to.y - from.y) * ease
 
-        animCirc.setAttribute('cx', cx); animCirc.setAttribute('cy', cy)
-        // Update clip path and image position
-        const clip = svg.querySelector('#anim-clip circle')
-        const img  = animG.querySelector('image')
-        const txt  = animG.querySelector('text')
-        if (clip) { clip.setAttribute('cx', cx); clip.setAttribute('cy', cy) }
-        if (img)  { img.setAttribute('x', cx - ANIM_R); img.setAttribute('y', cy - ANIM_R) }
-        if (txt)  { txt.setAttribute('x', cx); txt.setAttribute('y', cy) }
+        halo.setAttribute('cx', cx); halo.setAttribute('cy', cy)
+        ring.setAttribute('cx', cx); ring.setAttribute('cy', cy)
+        cc.setAttribute('cx', cx);   cc.setAttribute('cy', cy)
+        const img2 = animG.querySelector('image')
+        const txt2 = animG.querySelector('text')
+        const bg2  = animG.querySelectorAll('circle')[2]
+        if (img2) { img2.setAttribute('x', cx - ANIM_R); img2.setAttribute('y', cy - ANIM_R) }
+        if (txt2) { txt2.setAttribute('x', cx); txt2.setAttribute('y', cy) }
+        if (bg2)  { bg2.setAttribute('cx', cx); bg2.setAttribute('cy', cy) }
 
-        // Move camera to follow
-        const svgRW = svg.getBoundingClientRect().width || boardSvgW
-        const ss    = svgRW / boardSvgW
+        // Camera follows
         const viewport = document.getElementById('board-viewport')
         if (viewport) {
           const vw = viewport.clientWidth, vh = viewport.clientHeight
-          cameraX = vw / 2 - cx * ss * cameraScale
-          cameraY = vh / 2 - cy * ss * cameraScale
+          cameraX = vw / 2 - cx * ns * cameraScale
+          cameraY = vh / 2 - (cy - vbOffY) * ns * cameraScale
           applyCamera(false)
         }
 
@@ -1690,12 +1696,9 @@
       requestAnimationFrame(step)
     })
 
-    // Remove anim avatar and settle camera on destination
-    animG.remove()
-    svg.querySelector('#anim-clip')?.remove()
+    animG.remove(); clip.remove()
     boardFocusPosition(toIdx, true, 3)
-
-    await new Promise(r => setTimeout(r, 300))
+    await new Promise(r => setTimeout(r, 250))
   }
 
   // ════════════════════════════════
@@ -1759,13 +1762,13 @@
   function renderBoard() {
     const svg   = document.getElementById('board-svg')
     const total = boardSpaces.length
-    const R     = 18
-    const AV    = 7
+    const R     = 36    // larger circles — crisp at high zoom
+    const AV    = 13    // avatar size inside spaces
     const MAX_VISIBLE = 3
-    const PAD   = 90    // extra padding to accommodate START/FINISH badges above top spaces
-    const WIDTH = 1000
+    const PAD   = 160   // padding for badges
+    const WIDTH = 3000  // high-res coordinate space
     const COLS  = 8
-    const AMP   = 90   // bigger amplitude = more vertical spread between rows
+    const AMP   = 180   // amplitude scales with WIDTH
 
     // Custom positions are stored as 0..1 ratios of the editor canvas
     // Check robustly — Supabase may return x/y as numbers or null
@@ -1791,8 +1794,8 @@
       // Enforce a minimum height so the board never looks squashed
       const drawW = WIDTH - PAD * 2
       const naturalH = drawW * (rangeY / rangeX)
-      const drawH = Math.max(naturalH, 600)  // minimum height for custom shapes
-      svgH = drawH + PAD * 2 + 40  // extra 40px for START/FINISH badge overflow
+      const drawH = Math.max(naturalH, 1800)  // minimum height for custom shapes
+      svgH = drawH + PAD * 2 + 80
 
       positions = boardSpaces.map(s => ({
         x: PAD + ((parseFloat(s.x) ?? 0.5) - minX) / rangeX * drawW,
@@ -1801,7 +1804,7 @@
     } else {
       // Sine wave fallback
       const spacingX = (WIDTH - PAD * 2) / (COLS - 1)
-      const rowHeight = AMP * 2 + R * 2 + 60  // extra vertical gap between rows
+      const rowHeight = AMP * 2 + R * 2 + 120  // extra vertical gap between rows
       for (let i = 0; i < total; i++) {
         const row = Math.floor(i / COLS)
         const col = i % COLS
@@ -1813,7 +1816,7 @@
         const baseY = PAD + row * rowHeight + AMP
         positions.push({ x, y: baseY - sineY * AMP })
       }
-      svgH = PAD + Math.ceil(total / COLS) * (AMP * 2 + R * 2 + 60) + PAD
+      svgH = PAD + Math.ceil(total / COLS) * (AMP * 2 + R * 2 + 120) + PAD
     }
     // Add extra top margin for START/FINISH badges (pill is ~30px above top space)
     const BADGE_OVERHANG = 50
@@ -1823,6 +1826,21 @@
     svg.innerHTML = ''
 
     const defs = document.createElementNS('http://www.w3.org/2000/svg','defs')
+    // Add glow filter for my space
+    const filter = document.createElementNS('http://www.w3.org/2000/svg','filter')
+    filter.setAttribute('id','glow-filter')
+    filter.setAttribute('x','-50%'); filter.setAttribute('y','-50%')
+    filter.setAttribute('width','200%'); filter.setAttribute('height','200%')
+    const feGaussian = document.createElementNS('http://www.w3.org/2000/svg','feGaussianBlur')
+    feGaussian.setAttribute('stdDeviation','8'); feGaussian.setAttribute('result','blur')
+    const feMerge = document.createElementNS('http://www.w3.org/2000/svg','feMerge')
+    const feMerge1 = document.createElementNS('http://www.w3.org/2000/svg','feMergeNode')
+    feMerge1.setAttribute('in','blur')
+    const feMerge2 = document.createElementNS('http://www.w3.org/2000/svg','feMergeNode')
+    feMerge2.setAttribute('in','SourceGraphic')
+    feMerge.appendChild(feMerge1); feMerge.appendChild(feMerge2)
+    filter.appendChild(feGaussian); filter.appendChild(feMerge)
+    defs.appendChild(filter)
 
     // Connector path
     let pathD = ''
@@ -1890,13 +1908,17 @@
       if (isStart) {
         circ.setAttribute('fill', 'rgba(34,197,94,0.35)')
         circ.setAttribute('stroke', '#22c55e')
-        circ.setAttribute('stroke-width', '3')
+        circ.setAttribute('stroke-width', '6')
       } else if (isEnd) {
         circ.setAttribute('fill', 'rgba(245,158,11,0.35)')
         circ.setAttribute('stroke', '#f59e0b')
-        circ.setAttribute('stroke-width', '3')
+        circ.setAttribute('stroke-width', '6')
       } else {
         circ.setAttribute('class', fillClass)
+      }
+      if (isMyTurn) {
+        circ.setAttribute('filter', 'url(#glow-filter)')
+        circ.setAttribute('stroke-width', '6')
       }
       g.appendChild(circ)
 
@@ -1920,8 +1942,8 @@
         pillTxt.setAttribute('fill', '#000')
         pillTxt.setAttribute('font-family', 'Barlow Condensed, sans-serif')
         pillTxt.setAttribute('font-weight', '900')
-        pillTxt.setAttribute('font-size', '11')
-        pillTxt.setAttribute('letter-spacing', '0.5')
+        pillTxt.setAttribute('font-size', '22')
+        pillTxt.setAttribute('letter-spacing', '1')
         pillTxt.textContent = label
         g.appendChild(pillTxt)
       }
@@ -1986,10 +2008,18 @@
           clip.appendChild(cc); defs.appendChild(clip)
 
           const url = getAvatarUrl(p)
-          // Ring
+          // Dark backdrop for contrast
+          const backdrop = document.createElementNS('http://www.w3.org/2000/svg','circle')
+          backdrop.setAttribute('cx', ax); backdrop.setAttribute('cy', ay)
+          backdrop.setAttribute('r', AV + 5)
+          backdrop.setAttribute('fill', 'rgba(0,0,0,0.55)')
+          g.appendChild(backdrop)
+          // White ring
           const ring = document.createElementNS('http://www.w3.org/2000/svg','circle')
-          ring.setAttribute('cx', ax); ring.setAttribute('cy', ay); ring.setAttribute('r', AV + 1.5)
-          ring.setAttribute('fill', 'rgba(255,255,255,0.12)')
+          ring.setAttribute('cx', ax); ring.setAttribute('cy', ay); ring.setAttribute('r', AV + 3)
+          ring.setAttribute('fill', 'none')
+          ring.setAttribute('stroke', '#fff')
+          ring.setAttribute('stroke-width', '2.5')
           g.appendChild(ring)
 
           if (url) {
@@ -1999,6 +2029,7 @@
             img.setAttribute('width', AV * 2); img.setAttribute('height', AV * 2)
             img.setAttribute('clip-path', `url(#${clipId})`)
             img.setAttribute('preserveAspectRatio','xMidYMid slice')
+            img.setAttribute('style', 'filter: drop-shadow(0 0 3px rgba(0,0,0,0.8))')
             g.appendChild(img)
           } else {
             const bg = document.createElementNS('http://www.w3.org/2000/svg','circle')
@@ -2007,8 +2038,10 @@
             g.appendChild(bg)
             const txt = document.createElementNS('http://www.w3.org/2000/svg','text')
             txt.setAttribute('x', ax); txt.setAttribute('y', ay)
-            txt.setAttribute('class','space-label'); txt.setAttribute('fill','#fff')
-            txt.setAttribute('font-size','8')
+            txt.setAttribute('text-anchor','middle'); txt.setAttribute('dominant-baseline','middle')
+            txt.setAttribute('fill','#fff'); txt.setAttribute('font-weight','800')
+            txt.setAttribute('font-family','Barlow Condensed, sans-serif')
+            txt.setAttribute('font-size', String(AV * 1.1))
             txt.textContent = initials(p.display_name)
             g.appendChild(txt)
           }
