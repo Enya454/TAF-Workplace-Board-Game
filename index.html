@@ -184,8 +184,46 @@
     .btn-skip:disabled { opacity: 0.3; cursor: not-allowed; }
 
     /* ── Board (centre) ── */
-    .board-area { flex: 1; overflow: auto; background: var(--dark); display: flex; align-items: flex-start; justify-content: center; min-width: 0; }
-    .board-svg-wrap { width: 100%; max-width: 1200px; padding: 1.5rem; flex-shrink: 0; }
+    .board-area { flex: 1; display: flex; flex-direction: column; background: var(--dark); min-width: 0; overflow: hidden; }
+
+    /* Toolbar */
+    .board-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0.5rem 0.75rem; background: var(--dark-2);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      flex-shrink: 0; gap: 0.5rem; flex-wrap: wrap;
+    }
+    .board-toolbar-left, .board-toolbar-centre, .board-toolbar-right {
+      display: flex; align-items: center; gap: 0.35rem;
+    }
+    .board-toolbar-centre { flex: 1; justify-content: center; }
+    .board-nav-btn {
+      background: var(--dark-3); border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius-sm); color: var(--grey-light);
+      font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+      font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase;
+      padding: 0.35rem 0.7rem; cursor: pointer; white-space: nowrap;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .board-nav-btn:hover { background: var(--dark-4); color: #fff; border-color: rgba(255,255,255,0.2); }
+    .board-nav-btn.active { background: rgba(232,17,45,0.15); border-color: rgba(232,17,45,0.4); color: var(--red); }
+    .board-nav-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 0.82rem; letter-spacing: 0.04em; color: var(--grey-light); min-width: 80px; text-align: center; }
+
+    /* Viewport */
+    .board-viewport {
+      flex: 1; overflow: hidden; position: relative; cursor: grab;
+    }
+    .board-viewport:active { cursor: grabbing; }
+    .board-canvas {
+      position: absolute; top: 0; left: 0;
+      transform-origin: 0 0;
+      transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      will-change: transform;
+    }
+    .board-canvas.instant { transition: none !important; }
+    .board-canvas.animating { transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    #board-svg { display: block; }
 
 
     /* Space circles */
@@ -871,9 +909,31 @@
 
     <!-- ── BOARD (centre) ── -->
     <div class="board-area">
-      <div class="board-svg-wrap">
-        <svg id="board-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+
+      <!-- Navigation toolbar -->
+      <div class="board-toolbar">
+        <div class="board-toolbar-left">
+          <button class="board-nav-btn" onclick="boardNavSpace('prev')" title="Previous space">◀</button>
+          <button class="board-nav-btn active" onclick="boardFocusMySpace()" title="Jump to my space" id="btn-my-space">📍 My Space</button>
+          <button class="board-nav-btn" onclick="boardNavSpace('next')" title="Next space">▶</button>
+        </div>
+        <div class="board-toolbar-centre">
+          <button class="board-nav-btn" onclick="boardNavPlayer('prev')" title="Previous player">👤◀</button>
+          <span class="board-nav-label" id="board-nav-label">Board View</span>
+          <button class="board-nav-btn" onclick="boardNavPlayer('next')" title="Next player">▶👤</button>
+        </div>
+        <div class="board-toolbar-right">
+          <button class="board-nav-btn" onclick="boardZoomOut()" title="Zoom out">🔍 Full Board</button>
+        </div>
       </div>
+
+      <!-- Zoomable/pannable board viewport -->
+      <div class="board-viewport" id="board-viewport">
+        <div class="board-canvas" id="board-canvas">
+          <svg id="board-svg" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+      </div>
+
     </div>
 
     <!-- ── RIGHT SIDEBAR — players list ── -->
@@ -1085,9 +1145,21 @@
   let boardSpaces    = []
   let allPlayers     = []
   let boardConfig    = {}
-  let currentTasks      = []   // tasks for current space colour
+  let currentTasks      = []
   let avatarFileBlob    = null
-  let possessedPlayerId = null  // set when admin is possessing a player
+  let possessedPlayerId = null
+
+  // ── Board camera state ──
+  let boardPositions  = []    // [{x,y}] pixel positions for each space
+  let boardSvgW       = 1000  // logical SVG width
+  let boardSvgH       = 800   // logical SVG height
+  let cameraScale     = 1
+  let cameraX         = 0
+  let cameraY         = 0
+  let boardFocusIdx   = -1    // which space index is currently focused (-1 = full board)
+  let boardPlayerIdx  = 0     // which player we're tracking in player nav
+  let isDragging      = false
+  let dragStartX      = 0, dragStartY = 0, dragCamX = 0, dragCamY = 0
 
   const SPACE_ICONS  = { green: '🟢', blue: '🔵', red: '🔴' }
   const SPACE_LABELS = { green: 'Green Space — Easy Tasks', blue: 'Blue Space — Monthly Tasks', red: 'Red Space — Hard Tasks' }
@@ -1223,6 +1295,8 @@
     renderSidePanel()
     renderSpaceBanner()
     await renderTaskPanel()
+    // Init pan/zoom after board is rendered
+    setTimeout(initBoardPan, 200)
   }
 
   // Refresh allPlayers from DB and re-render board + panel
@@ -1331,6 +1405,292 @@
     const src  = document.getElementById('task-panel-body')
     const dest = document.getElementById('mobile-task-body')
     if (src && dest) dest.innerHTML = src.innerHTML
+  }
+
+  // ════════════════════════════════
+  //  BOARD CAMERA & NAVIGATION
+  // ════════════════════════════════
+
+  function getCameraTransform(x, y, scale) {
+    return `translate(${x}px, ${y}px) scale(${scale})`
+  }
+
+  function applyCamera(animate = true) {
+    const canvas = document.getElementById('board-canvas')
+    if (!canvas) return
+    if (!animate) canvas.classList.add('instant')
+    else canvas.classList.remove('instant')
+    canvas.style.transform = getCameraTransform(cameraX, cameraY, cameraScale)
+    if (!animate) {
+      // Force reflow then re-enable transitions
+      canvas.offsetHeight
+      canvas.classList.remove('instant')
+    }
+  }
+
+  function boardFocusPosition(posIdx, animate = true, scale = 2.8) {
+    const viewport = document.getElementById('board-viewport')
+    const svg      = document.getElementById('board-svg')
+    if (!viewport || !boardPositions[posIdx]) return
+
+    const vw = viewport.clientWidth
+    const vh = viewport.clientHeight
+
+    // SVG renders at full width — get actual pixel scale
+    const svgRenderedW = svg.getBoundingClientRect().width
+    const svgScale     = svgRenderedW / boardSvgW
+
+    const pos  = boardPositions[posIdx]
+    const px   = pos.x * svgScale  // pixel position in rendered SVG
+    const py   = pos.y * svgScale
+
+    cameraScale = scale
+    cameraX = vw / 2 - px * scale
+    cameraY = vh / 2 - py * scale
+
+    boardFocusIdx = posIdx
+    applyCamera(animate)
+  }
+
+  function boardZoomOut(animate = true) {
+    const viewport = document.getElementById('board-viewport')
+    const svg      = document.getElementById('board-svg')
+    if (!viewport) return
+
+    const vw = viewport.clientWidth
+    const vh = viewport.clientHeight
+    const svgRenderedW = svg.getBoundingClientRect().width || vw
+    const svgRenderedH = svg.getBoundingClientRect().height || vh
+
+    // Fit the whole board in the viewport
+    const scaleX = vw / svgRenderedW
+    const scaleY = vh / svgRenderedH
+    cameraScale = Math.min(scaleX, scaleY, 1) * 0.92  // 92% so there's a bit of padding
+
+    cameraX = (vw - svgRenderedW * cameraScale) / 2
+    cameraY = (vh - svgRenderedH * cameraScale) / 2
+
+    boardFocusIdx = -1
+    document.getElementById('board-nav-label').textContent = 'Full Board'
+    applyCamera(animate)
+  }
+
+  function boardFocusMySpace(instant = false) {
+    const mySpace = currentProfile?.current_space || 1
+    const idx     = mySpace - 1
+    if (boardPositions[idx]) {
+      boardFocusPosition(idx, !instant)
+      const spaceData = boardSpaces[idx]
+      const colour = spaceData?.colour || 'green'
+      document.getElementById('board-nav-label').textContent = `Space ${mySpace} · ${colour}`
+    }
+    // Highlight my-space button
+    document.getElementById('btn-my-space')?.classList.add('active')
+  }
+
+  function boardNavSpace(dir) {
+    const current = boardFocusIdx >= 0 ? boardFocusIdx : (currentProfile?.current_space || 1) - 1
+    const next    = dir === 'next'
+      ? Math.min(current + 1, boardPositions.length - 1)
+      : Math.max(current - 1, 0)
+    boardFocusPosition(next)
+    const spaceNum  = next + 1
+    const spaceData = boardSpaces[next]
+    document.getElementById('board-nav-label').textContent = `Space ${spaceNum} · ${spaceData?.colour || ''}`
+    document.getElementById('btn-my-space')?.classList.remove('active')
+  }
+
+  function boardNavPlayer(dir) {
+    const staffPlayers = allPlayers.filter(p => p.role === 'staff' || p.role === 'supervisor')
+    if (!staffPlayers.length) return
+    if (dir === 'next') boardPlayerIdx = (boardPlayerIdx + 1) % staffPlayers.length
+    else boardPlayerIdx = (boardPlayerIdx - 1 + staffPlayers.length) % staffPlayers.length
+
+    const player = staffPlayers[boardPlayerIdx]
+    const spaceIdx = (player.current_space || 1) - 1
+    if (boardPositions[spaceIdx]) {
+      boardFocusPosition(spaceIdx)
+      document.getElementById('board-nav-label').textContent = `${player.display_name} · Space ${player.current_space || 1}`
+    }
+    document.getElementById('btn-my-space')?.classList.remove('active')
+  }
+
+  // ── Touch/mouse pan ──
+  function initBoardPan() {
+    const viewport = document.getElementById('board-viewport')
+    if (!viewport) return
+
+    function onDown(e) {
+      isDragging = true
+      const src = e.touches ? e.touches[0] : e
+      dragStartX = src.clientX; dragStartY = src.clientY
+      dragCamX = cameraX; dragCamY = cameraY
+      viewport.style.cursor = 'grabbing'
+    }
+    function onMove(e) {
+      if (!isDragging) return
+      e.preventDefault()
+      const src = e.touches ? e.touches[0] : e
+      cameraX = dragCamX + (src.clientX - dragStartX)
+      cameraY = dragCamY + (src.clientY - dragStartY)
+      applyCamera(false)
+    }
+    function onUp() {
+      isDragging = false
+      viewport.style.cursor = 'grab'
+    }
+
+    viewport.addEventListener('mousedown',  onDown)
+    viewport.addEventListener('mousemove',  onMove)
+    viewport.addEventListener('mouseup',    onUp)
+    viewport.addEventListener('mouseleave', onUp)
+    viewport.addEventListener('touchstart', onDown, { passive: false })
+    viewport.addEventListener('touchmove',  onMove, { passive: false })
+    viewport.addEventListener('touchend',   onUp)
+
+    // Pinch to zoom
+    let lastDist = 0
+    viewport.addEventListener('touchstart', e => {
+      if (e.touches.length === 2) {
+        lastDist = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY)
+      }
+    })
+    viewport.addEventListener('touchmove', e => {
+      if (e.touches.length === 2) {
+        e.preventDefault()
+        const dist  = Math.hypot(e.touches[0].clientX - e.touches[1].clientX, e.touches[0].clientY - e.touches[1].clientY)
+        const delta = dist / lastDist
+        cameraScale = Math.max(0.3, Math.min(5, cameraScale * delta))
+        lastDist = dist
+        applyCamera(false)
+      }
+    }, { passive: false })
+
+    // Scroll wheel zoom
+    viewport.addEventListener('wheel', e => {
+      e.preventDefault()
+      const delta     = e.deltaY > 0 ? 0.85 : 1.18
+      const newScale  = Math.max(0.3, Math.min(5, cameraScale * delta))
+      // Zoom toward mouse position
+      const rect      = viewport.getBoundingClientRect()
+      const mx        = e.clientX - rect.left
+      const my        = e.clientY - rect.top
+      cameraX = mx - (mx - cameraX) * (newScale / cameraScale)
+      cameraY = my - (my - cameraY) * (newScale / cameraScale)
+      cameraScale     = newScale
+      applyCamera(false)
+    }, { passive: false })
+  }
+
+  // ── Animated player movement ──
+  // Called from advanceSpace — animates the avatar moving through spaces
+  async function animatePlayerMove(fromSpace, toSpace) {
+    if (!boardPositions.length) return
+    const svg = document.getElementById('board-svg')
+    if (!svg) return
+
+    // Create a temporary animated avatar circle
+    const fromIdx = fromSpace - 1
+    const toIdx   = toSpace - 1
+    if (!boardPositions[fromIdx] || !boardPositions[toIdx]) return
+
+    const svgRenderedW = svg.getBoundingClientRect().width
+    const svgScale = svgRenderedW / boardSvgW
+
+    const from = boardPositions[fromIdx]
+    const to   = boardPositions[toIdx]
+
+    // Create moving avatar element in SVG
+    const ANIM_R = 14
+    const animG = document.createElementNS('http://www.w3.org/2000/svg','g')
+    animG.setAttribute('id', 'anim-avatar')
+    animG.style.transition = 'none'
+
+    const animCirc = document.createElementNS('http://www.w3.org/2000/svg','circle')
+    animCirc.setAttribute('cx', from.x); animCirc.setAttribute('cy', from.y)
+    animCirc.setAttribute('r', ANIM_R + 4)
+    animCirc.setAttribute('fill', 'rgba(255,255,255,0.15)')
+    animCirc.setAttribute('stroke', '#fff')
+    animCirc.setAttribute('stroke-width', '2.5')
+    animG.appendChild(animCirc)
+
+    // Add player initials/avatar inside
+    const url = getAvatarUrl(currentProfile)
+    if (url) {
+      const clipId = 'anim-clip'
+      const defs   = svg.querySelector('defs') || svg.insertBefore(document.createElementNS('http://www.w3.org/2000/svg','defs'), svg.firstChild)
+      const clip   = document.createElementNS('http://www.w3.org/2000/svg','clipPath')
+      clip.setAttribute('id', clipId)
+      const cc = document.createElementNS('http://www.w3.org/2000/svg','circle')
+      cc.setAttribute('cx', from.x); cc.setAttribute('cy', from.y); cc.setAttribute('r', ANIM_R)
+      clip.appendChild(cc); defs.appendChild(clip)
+      const img = document.createElementNS('http://www.w3.org/2000/svg','image')
+      img.setAttribute('href', url)
+      img.setAttribute('x', from.x - ANIM_R); img.setAttribute('y', from.y - ANIM_R)
+      img.setAttribute('width', ANIM_R * 2); img.setAttribute('height', ANIM_R * 2)
+      img.setAttribute('clip-path', `url(#${clipId})`)
+      img.setAttribute('preserveAspectRatio', 'xMidYMid slice')
+      animG.appendChild(img)
+    } else {
+      const txt = document.createElementNS('http://www.w3.org/2000/svg','text')
+      txt.setAttribute('x', from.x); txt.setAttribute('y', from.y)
+      txt.setAttribute('text-anchor','middle'); txt.setAttribute('dominant-baseline','middle')
+      txt.setAttribute('fill','#fff'); txt.setAttribute('font-size','11')
+      txt.setAttribute('font-family','Barlow Condensed, sans-serif'); txt.setAttribute('font-weight','800')
+      txt.textContent = initials(currentProfile.display_name)
+      animG.appendChild(txt)
+    }
+
+    svg.appendChild(animG)
+
+    // Focus camera on current space first
+    boardFocusPosition(fromIdx, true, 3)
+    await new Promise(r => setTimeout(r, 400))
+
+    // Animate movement using SVG SMIL or CSS animation via transform
+    // We'll use a JS animation loop for smooth cross-browser support
+    const DURATION = 800
+    const start    = performance.now()
+
+    await new Promise(resolve => {
+      function step(now) {
+        const t    = Math.min((now - start) / DURATION, 1)
+        const ease = t < 0.5 ? 2*t*t : -1+(4-2*t)*t   // ease in-out quad
+        const cx   = from.x + (to.x - from.x) * ease
+        const cy   = from.y + (to.y - from.y) * ease
+
+        animCirc.setAttribute('cx', cx); animCirc.setAttribute('cy', cy)
+        // Update clip path and image position
+        const clip = svg.querySelector('#anim-clip circle')
+        const img  = animG.querySelector('image')
+        const txt  = animG.querySelector('text')
+        if (clip) { clip.setAttribute('cx', cx); clip.setAttribute('cy', cy) }
+        if (img)  { img.setAttribute('x', cx - ANIM_R); img.setAttribute('y', cy - ANIM_R) }
+        if (txt)  { txt.setAttribute('x', cx); txt.setAttribute('y', cy) }
+
+        // Move camera to follow
+        const svgRW = svg.getBoundingClientRect().width || boardSvgW
+        const ss    = svgRW / boardSvgW
+        const viewport = document.getElementById('board-viewport')
+        if (viewport) {
+          const vw = viewport.clientWidth, vh = viewport.clientHeight
+          cameraX = vw / 2 - cx * ss * cameraScale
+          cameraY = vh / 2 - cy * ss * cameraScale
+          applyCamera(false)
+        }
+
+        if (t < 1) requestAnimationFrame(step)
+        else resolve()
+      }
+      requestAnimationFrame(step)
+    })
+
+    // Remove anim avatar and settle camera on destination
+    animG.remove()
+    svg.querySelector('#anim-clip')?.remove()
+    boardFocusPosition(toIdx, true, 3)
+
+    await new Promise(r => setTimeout(r, 300))
   }
 
   // ════════════════════════════════
@@ -1476,12 +1836,32 @@
       const players   = allPlayers.filter(p => (p.current_space || 1) === space.position)
       const fillClass = `space-${colour}-fill${isMine ? ' mine' : ''}`
 
-      const isStart = space.position === 1
-      const isEnd   = space.position === boardSpaces.length
+      const isStart  = space.position === 1
+      const isEnd    = space.position === boardSpaces.length
+      const isMyTurn = space.position === (currentProfile.current_space || 1)
 
       const g = document.createElementNS('http://www.w3.org/2000/svg','g')
       g.setAttribute('class','space-circle')
       g.style.cursor = players.length > 0 ? 'pointer' : 'default'
+
+      // Animated pointer above my space
+      if (isMyTurn) {
+        const ptr = document.createElementNS('http://www.w3.org/2000/svg','polygon')
+        const pSize = 8
+        // Triangle pointing down toward the circle
+        const ptrR = isStart || isEnd ? R + 3 : R
+        const ptx = x, pty = y - ptrR - pSize - 4
+        ptr.setAttribute('points', `${ptx},${pty + pSize} ${ptx - pSize},${pty - pSize} ${ptx + pSize},${pty - pSize}`)
+        ptr.setAttribute('fill', '#fff')
+        ptr.setAttribute('opacity', '0.9')
+        // Add subtle pulse via SVG animate
+        const anim = document.createElementNS('http://www.w3.org/2000/svg','animateTransform')
+        anim.setAttribute('attributeName','transform'); anim.setAttribute('type','translate')
+        anim.setAttribute('values',`0,0; 0,-4; 0,0`); anim.setAttribute('dur','1.2s')
+        anim.setAttribute('repeatCount','indefinite')
+        ptr.appendChild(anim)
+        g.appendChild(ptr)
+      }
 
       // Glow ring for start/end
       if (isStart || isEnd) {
@@ -1664,17 +2044,13 @@
 
     svg.insertBefore(defs, svg.firstChild)
 
-    // Scroll to my space
-    setTimeout(() => {
-      const mySpace = currentProfile.current_space || 1
-      const myPos   = positions[mySpace - 1]
-      if (myPos) {
-        const wrap = document.querySelector('.board-area')
-        const ratio = myPos.y / svgH
-        const svgRenderedH = document.getElementById('board-svg').getBoundingClientRect().height
-        wrap.scrollTop = svgRenderedH * ratio - wrap.clientHeight / 2
-      }
-    }, 150)
+    // Store positions for camera navigation
+    boardPositions = positions
+    boardSvgW = WIDTH
+    boardSvgH = svgH
+
+    // Focus on my space after render
+    setTimeout(() => boardFocusMySpace(true), 150)
   }
 
   // ════════════════════════════════
