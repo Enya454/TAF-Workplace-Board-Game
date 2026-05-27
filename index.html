@@ -744,34 +744,86 @@
     }
     .tooltip-av img { width: 100%; height: 100%; object-fit: cover; }
 
-    /* ── Mobile sheet ── */
-    .mobile-sheet {
-      display: none;
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 150;
-      background: var(--dark-2);
-      border-top: 1px solid rgba(255,255,255,0.1);
-      border-radius: 16px 16px 0 0;
-      box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
-      transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
-      transform: translateY(calc(100% - 52px));
-    }
-    .mobile-sheet.open { transform: translateY(0); }
-    .mobile-sheet-handle {
-      width: 36px; height: 4px; border-radius: 99px;
-      background: rgba(255,255,255,0.2); margin: 10px auto 0; cursor: pointer;
-    }
-    .mobile-sheet-content { padding: 0.75rem 1rem 1.5rem; }
-    .mobile-sheet-top { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+    /* ══════════════════════════════
+       MOBILE GAME UI
+    ══════════════════════════════ */
 
-    /* ── Mobile responsive (must be last to override earlier rules) ── */
+    /* Floating player card — top left */
+    .mobile-player-card {
+      display: none;
+      position: fixed; top: 60px; left: 10px; z-index: 120;
+      background: rgba(22,22,22,0.92);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      padding: 0.6rem 0.75rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      min-width: 130px;
+    }
+    .mob-card-top { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.35rem; }
+    .mob-card-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 900;
+      font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.02em; }
+    .mob-card-stats { display: flex; gap: 0.6rem; }
+    .mob-card-stat { display: flex; flex-direction: column; align-items: center; }
+    .mob-card-val { font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+      font-size: 1rem; line-height: 1; }
+    .mob-card-label { font-size: 0.55rem; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--grey); margin-top: 1px; }
+    .mob-card-stars { display: flex; gap: 3px; margin-top: 0.3rem; }
+    .mob-card-star { width: 10px; height: 10px; border-radius: 50%;
+      border: 1px solid rgba(255,255,255,0.2); background: var(--dark-3); }
+    .mob-card-star.filled { background: gold; border-color: #f59e0b; }
+
+    /* Bottom task bar */
+    .mobile-task-bar {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 120;
+      background: rgba(22,22,22,0.95);
+      backdrop-filter: blur(16px);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px 20px 0 0;
+      transition: transform 0.4s cubic-bezier(0.16,1,0.3,1);
+      transform: translateY(calc(100% - 64px));
+      max-height: 85vh;
+    }
+    .mobile-task-bar.open { transform: translateY(0); }
+    .mobile-task-bar-peek {
+      height: 64px; display: flex; align-items: center;
+      padding: 0 1rem; gap: 0.75rem; cursor: pointer;
+    }
+    .mobile-task-bar-handle {
+      width: 36px; height: 4px; border-radius: 99px;
+      background: rgba(255,255,255,0.2); position: absolute;
+      top: 10px; left: 50%; transform: translateX(-50%);
+    }
+    .mob-space-pip { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .mob-space-pip.green { background: var(--green); }
+    .mob-space-pip.blue  { background: var(--blue-s); }
+    .mob-space-pip.red   { background: var(--red); }
+    .mob-bar-label { font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
+      font-size: 0.9rem; text-transform: uppercase; letter-spacing: 0.04em; flex: 1; }
+    .mob-bar-status { font-size: 0.72rem; }
+    .mobile-task-bar-body {
+      padding: 0 1rem 1.5rem; overflow-y: auto;
+      max-height: calc(85vh - 64px);
+    }
+
+    /* ── Mobile responsive (must be last) ── */
     @media (max-width: 700px) {
-      /* Game */
+      /* Game — board takes full screen */
+      .game-nav { padding: 0.7rem 1rem; }
       .game-left { display: none !important; }
       .side-panel { display: none !important; }
+      .board-toolbar { padding: 0.35rem 0.6rem; flex-wrap: nowrap; }
+      .board-nav-btn { font-size: 0.68rem; padding: 0.3rem 0.5rem; }
+      .board-nav-label { font-size: 0.72rem; min-width: 60px; }
       .board-area { padding: 0 !important; }
-      .mobile-sheet { display: block !important; }
+      .mobile-player-card { display: block !important; }
+      .mobile-task-bar { display: block !important; }
+      /* Hide old mobile sheet */
+      .mobile-sheet { display: none !important; }
 
-      /* Admin — hide desktop sidebar, show bottom tabs */
+      /* Admin — bottom tabs */
       #page-admin { flex-direction: column; }
       .admin-sidebar { display: none !important; }
       .admin-bottom-tabs { display: flex !important; }
@@ -942,34 +994,48 @@
 
   </div>
 
-  <!-- Mobile bottom sheet (hidden on desktop) -->
-  <div class="mobile-sheet" id="mobile-sheet">
-    <div class="mobile-sheet-handle" onclick="toggleMobileSheet()"></div>
-    <div class="mobile-sheet-content">
-      <div class="mobile-sheet-top">
-        <div class="av sm" id="mobile-avatar"></div>
-        <div>
-          <div class="badge-name" id="mobile-name" style="font-size:0.9rem;"></div>
-          <div class="badge-row" style="justify-content:flex-start;gap:0.6rem;margin-top:0.2rem;">
-            <span class="badge-stat-val c-red" id="mobile-space" style="font-size:1rem;">—</span><span class="badge-stat-label">Space</span>
-            <span class="badge-stat-val c-green" id="mobile-laps" style="font-size:1rem;">—</span><span class="badge-stat-label">Laps</span>
-            <span class="badge-stat-val c-blue" id="mobile-tickets" style="font-size:1rem;">—</span><span class="badge-stat-label">Tickets</span>
-          </div>
-        </div>
+  <!-- Mobile floating player card (top left) -->
+  <div class="mobile-player-card" id="mobile-player-card">
+    <div class="mob-card-top">
+      <div class="av sm" id="mobile-avatar" onclick="openAvatarModal()" style="cursor:pointer;"></div>
+      <div class="mob-card-name" id="mobile-name"></div>
+    </div>
+    <div class="mob-card-stats">
+      <div class="mob-card-stat">
+        <div class="mob-card-val c-red" id="mobile-space">—</div>
+        <div class="mob-card-label">Space</div>
       </div>
-      <div class="space-banner" id="mobile-banner" style="border-radius:var(--radius-sm);margin-bottom:0.5rem;">
-        <div class="banner-icon" id="mobile-banner-icon">🟢</div>
-        <div>
-          <div class="banner-title" id="mobile-banner-title"></div>
-          <div class="banner-sub" id="mobile-banner-sub"></div>
-        </div>
+      <div class="mob-card-stat">
+        <div class="mob-card-val c-green" id="mobile-laps">—</div>
+        <div class="mob-card-label">Laps</div>
       </div>
-      <div id="mobile-task-body" style="display:flex;flex-direction:column;gap:0.4rem;max-height:220px;overflow-y:auto;"></div>
-      <div style="display:flex;gap:0.5rem;margin-top:0.6rem;">
-        <button class="btn-advance" id="mobile-btn-advance" onclick="advanceSpace()" disabled style="flex:1;font-size:0.85rem;padding:0.65rem;">✦ Move Forward</button>
-        <button class="btn-skip" id="mobile-btn-skip" onclick="useSkipTicket()" disabled style="font-size:0.75rem;padding:0.65rem;">🎟 Skip</button>
+      <div class="mob-card-stat">
+        <div class="mob-card-val c-blue" id="mobile-tickets">—</div>
+        <div class="mob-card-label">Tickets</div>
       </div>
     </div>
+    <div class="mob-card-stars">
+      <div class="mob-card-star" id="mob-star-0"></div>
+      <div class="mob-card-star" id="mob-star-1"></div>
+      <div class="mob-card-star" id="mob-star-2"></div>
+    </div>
+  </div>
+
+  <!-- Mobile bottom task bar -->
+  <div class="mobile-task-bar" id="mobile-task-bar">
+    <div class="mobile-task-bar-handle"></div>
+    <div class="mobile-task-bar-peek" onclick="toggleMobileTaskBar()">
+      <div class="mob-space-pip green" id="mob-space-pip"></div>
+      <div class="mob-bar-label" id="mob-bar-label">Tasks</div>
+      <div class="mob-bar-status" id="mob-bar-status"></div>
+      <div style="display:flex;gap:0.4rem;">
+        <button class="btn-advance" id="mobile-btn-advance" onclick="event.stopPropagation();advanceSpace()" disabled
+          style="font-size:0.72rem;padding:0.35rem 0.7rem;box-shadow:none;">✦ Move</button>
+        <button class="btn-skip" id="mobile-btn-skip" onclick="event.stopPropagation();useSkipTicket()" disabled
+          style="font-size:0.68rem;padding:0.35rem 0.6rem;">🎟</button>
+      </div>
+    </div>
+    <div class="mobile-task-bar-body" id="mobile-task-body"></div>
   </div>
 
 </div>
@@ -1360,7 +1426,7 @@
       const star = document.getElementById('bank-star-' + i)
       if (star) { if (i < banked.length) star.classList.add('filled'); else star.classList.remove('filled') }
     }
-    // Sync mobile sheet
+    // Sync mobile floating card
     const mn = document.getElementById('mobile-name')
     const ms = document.getElementById('mobile-space')
     const ml = document.getElementById('mobile-laps')
@@ -1371,34 +1437,46 @@
     if (ml) ml.textContent = currentProfile.laps_completed ?? 0
     if (mt) mt.textContent = currentProfile.skip_tickets ?? 0
     if (ma) renderAvEl(ma, currentProfile)
-    // Sync mobile advance/skip
+    // Mobile banked stars
+    const bankedArr = Array.isArray(currentProfile.banked_tasks) ? currentProfile.banked_tasks : []
+    for (let i = 0; i < 3; i++) {
+      const s = document.getElementById('mob-star-' + i)
+      if (s) s.classList.toggle('filled', i < bankedArr.length)
+    }
+    // Mobile advance/skip in peek bar
+    const isDone    = (currentProfile.space_tasks_completed || 0) >= 1
+    const hasTicket = (currentProfile.skip_tickets || 0) > 0
     const mba = document.getElementById('mobile-btn-advance')
     const mbs = document.getElementById('mobile-btn-skip')
-    const isDone = (currentProfile.space_tasks_completed || 0) >= 1
-    const hasTicket = (currentProfile.skip_tickets || 0) > 0
     if (mba) mba.disabled = !isDone
-    if (mbs) { mbs.disabled = !hasTicket; mbs.textContent = hasTicket ? `🎟 Skip (${currentProfile.skip_tickets})` : '🎟 No Tickets' }
+    if (mbs) mbs.disabled = !hasTicket
   }
 
-  function toggleMobileSheet() {
-    document.getElementById('mobile-sheet')?.classList.toggle('open')
+  function toggleMobileTaskBar() {
+    document.getElementById('mobile-task-bar')?.classList.toggle('open')
+  }
+
+  // Close task bar when move forward is pressed (let board animation show)
+  function closeMobileTaskBar() {
+    document.getElementById('mobile-task-bar')?.classList.remove('open')
   }
 
   function syncMobileBanner() {
     const s = boardSpaces.find(sp => sp.position === (currentProfile.current_space || 1))
     if (!s) return
-    const mb = document.getElementById('mobile-banner')
-    if (mb) mb.className = `space-banner ${s.colour}`
-    const mbi = document.getElementById('mobile-banner-icon')
-    const mbt = document.getElementById('mobile-banner-title')
-    const mbs = document.getElementById('mobile-banner-sub')
-    const ICONS = { green:'🟢', blue:'🔵', red:'🔴' }
-    const LABELS = { green:'Green Space — Easy Tasks', blue:'Blue Space — Monthly Tasks', red:'Red Space — Hard Tasks' }
-    const DESCS  = { green:'Complete any one task to move forward.', blue:'Monthly rotating tasks.', red:'Tough tasks — complete one to advance.' }
-    if (mbi) mbi.textContent = ICONS[s.colour]
-    if (mbt) mbt.textContent = LABELS[s.colour]
-    if (mbs) mbs.textContent = DESCS[s.colour]
-    // Mirror task body
+    // Update peek bar colour pip and label
+    const pip = document.getElementById('mob-space-pip')
+    const lbl = document.getElementById('mob-bar-label')
+    const sts = document.getElementById('mob-bar-status')
+    const LABELS = { green:'Green Space', blue:'Blue Space', red:'Red Space' }
+    if (pip) pip.className = `mob-space-pip ${s.colour}`
+    if (lbl) lbl.textContent = LABELS[s.colour] || 'Tasks'
+    const isDone = (currentProfile.space_tasks_completed || 0) >= 1
+    if (sts) {
+      sts.textContent = isDone ? '✓ Done' : 'Tap for tasks'
+      sts.style.color = isDone ? 'var(--green)' : 'var(--grey)'
+    }
+    // Mirror task body into bottom bar
     const src  = document.getElementById('task-panel-body')
     const dest = document.getElementById('mobile-task-body')
     if (src && dest) dest.innerHTML = src.innerHTML
@@ -2644,6 +2722,7 @@
   }
 
   async function advanceSpace() {
+    closeMobileTaskBar()   // hide task bar so board animation is visible
     const mySpace     = currentProfile.current_space || 1
     const totalSpaces = boardConfig.total_spaces || 40
     const isLastSpace = mySpace >= totalSpaces
