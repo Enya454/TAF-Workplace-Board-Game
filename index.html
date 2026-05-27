@@ -1519,16 +1519,22 @@
   }
 
   function boardNavPlayer(dir) {
-    const players = allPlayers.filter(p => p.role === 'staff' || p.role === 'supervisor')
+    // Include everyone on the board — staff, supervisors, admins (if opted in), and yourself
+    const players = [
+      ...(allPlayers.filter(p => p.id !== currentProfile?.id)),
+      currentProfile
+    ].filter(Boolean)
     if (!players.length) return
     if (dir === 'next') boardPlayerIdx = (boardPlayerIdx + 1) % players.length
     else boardPlayerIdx = (boardPlayerIdx - 1 + players.length) % players.length
     const player   = players[boardPlayerIdx]
     const spaceIdx = (player.current_space || 1) - 1
     boardFocusPosition(spaceIdx, true, 900)
+    const isMe = player.id === currentProfile?.id
     document.getElementById('board-nav-label').textContent =
-      `${player.display_name} · Space ${player.current_space || 1}`
-    document.getElementById('btn-my-space')?.classList.remove('active')
+      `${player.display_name}${isMe ? ' (you)' : ''} · Space ${player.current_space || 1}`
+    if (isMe) document.getElementById('btn-my-space')?.classList.add('active')
+    else document.getElementById('btn-my-space')?.classList.remove('active')
   }
 
   // ── Touch/mouse pan — operates in viewBox space ──
@@ -1982,12 +1988,18 @@
       }
       svgH = PAD + Math.ceil(total / COLS) * (AMP * 2 + R * 2 + 120) + PAD
     }
-    // Add extra top margin for START/FINISH badges (pill is ~30px above top space)
     const BADGE_OVERHANG = 50
     const viewMinY = -BADGE_OVERHANG
     const viewH    = svgH + BADGE_OVERHANG
-    svg.setAttribute('viewBox', `0 ${viewMinY} ${WIDTH} ${viewH}`)
+    // Only set viewBox dimensions — don't touch vbX/vbY/vbW/vbH camera state
+    // The camera preserves its current pan/zoom on re-renders
+    if (boardInitialRender) {
+      svg.setAttribute('viewBox', `0 ${viewMinY} ${WIDTH} ${viewH}`)
+    }
     svg.innerHTML = ''
+
+    // Re-apply current camera viewBox after innerHTML clear
+    svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
 
     const defs = document.createElementNS('http://www.w3.org/2000/svg','defs')
     // Add glow filter for my space
