@@ -92,6 +92,7 @@
     .nav-logo { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 1.3rem; color: var(--red); letter-spacing: 0.05em; }
     .nav-name { font-size: 0.9rem; color: var(--grey-light); }
     .game-nav-right { display: flex; align-items: center; gap: 0.6rem; }
+    .game-nav-mob-controls { display: none; align-items: center; gap: 0.25rem; flex: 1; justify-content: flex-end; margin-right: 0.4rem; }
 
     .game-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
 
@@ -751,7 +752,7 @@
     /* Floating player card — top left */
     .mobile-player-card {
       display: none;
-      position: fixed; top: calc(52px + env(safe-area-inset-top, 0px)); left: 10px; z-index: 120;
+      position: fixed; top: calc(50px + env(safe-area-inset-top, 0px)); left: 10px; z-index: 130;
       background: rgba(22,22,22,0.92);
       backdrop-filter: blur(12px);
       border: 1px solid rgba(255,255,255,0.1);
@@ -777,7 +778,7 @@
     /* Bottom task bar */
     .mobile-task-bar {
       display: none;
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 120;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 130;
       background: rgba(22,22,22,0.95);
       backdrop-filter: blur(16px);
       border-top: 1px solid rgba(255,255,255,0.1);
@@ -812,36 +813,29 @@
     @media (max-width: 700px) {
       /* Game — board takes full screen */
       #page-game { height: 100dvh; }
-      .game-nav { padding: 0.6rem 0.85rem; flex-shrink: 0; }
-      .game-nav .nav-logo { font-size: 1.1rem; }
-      .game-nav .nav-name { font-size: 0.8rem; }
+      .game-nav { padding: 0.5rem 0.75rem; flex-shrink: 0; }
+      .game-nav .nav-logo { font-size: 1rem; }
+      .game-nav .nav-name { display: none; }
       .game-left { display: none !important; }
       .side-panel { display: none !important; }
       .game-body { overflow: hidden; }
 
-      /* Board toolbar — compact, no overflow */
-      .board-toolbar {
-        padding: 0.3rem 0.5rem !important;
-        gap: 0.25rem;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
+      /* Hide desktop board toolbar, show nav controls in nav bar */
+      .board-toolbar { display: none !important; }
+      .game-nav-mob-controls { display: flex !important; }
+      .game-nav-mob-controls .board-nav-btn {
+        font-size: 0.72rem; padding: 0.3rem 0.5rem;
+        background: var(--dark-3); border-color: rgba(255,255,255,0.1);
       }
-      .board-nav-btn { font-size: 0.65rem !important; padding: 0.28rem 0.45rem !important; white-space: nowrap; }
-      .board-nav-label { font-size: 0.65rem !important; min-width: 50px !important; }
-      .board-toolbar-left, .board-toolbar-right { flex-shrink: 0; }
 
-      /* Board fills remaining space above task bar */
-      .board-area { padding: 0 !important; }
+      /* Board fills everything */
+      .board-area { padding: 0 !important; padding-bottom: 64px !important; }
       .board-viewport { height: 100% !important; }
 
-      /* Mobile UI */
+      /* Mobile UI elements */
       .mobile-player-card { display: block !important; }
       .mobile-task-bar { display: block !important; }
       .mobile-sheet { display: none !important; }
-
-      /* Push board viewport up so task bar peek doesn't cover it */
-      .board-area { padding-bottom: 64px !important; }
 
       /* Admin — bottom tabs */
       #page-admin { flex-direction: column; height: 100dvh; }
@@ -908,7 +902,17 @@
   <nav class="game-nav">
     <div class="game-nav-left">
       <span class="nav-logo">AF</span>
-      <span class="nav-name" id="nav-name"></span>
+      <span class="nav-name" id="nav-name" class="mob-hide"></span>
+    </div>
+    <!-- Desktop nav centre/right handled by board-toolbar below -->
+    <!-- Mobile: compact nav buttons sit here in the nav bar -->
+    <div class="game-nav-mob-controls">
+      <button class="board-nav-btn" onclick="boardNavSpace('prev')">◀</button>
+      <button class="board-nav-btn" onclick="boardFocusMySpace()" id="btn-my-space-mob">📍</button>
+      <button class="board-nav-btn" onclick="boardNavSpace('next')">▶</button>
+      <button class="board-nav-btn" onclick="boardNavPlayer('prev')">👤◀</button>
+      <button class="board-nav-btn" onclick="boardNavPlayer('next')">▶👤</button>
+      <button class="board-nav-btn" onclick="boardZoomOut()">🔍</button>
     </div>
     <div class="game-nav-right">
       <button class="btn btn-ghost btn-sm" onclick="handleSignOut()">Sign Out</button>
