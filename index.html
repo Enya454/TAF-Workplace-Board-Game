@@ -2131,6 +2131,7 @@
           <button class="btn-xs btn-xs-blue" onclick="adminMovePlayer('${p.id}','${p.display_name}',${p.current_space||1})">Move</button>
           <button class="btn-xs btn-xs-grey" onclick="adminResetPlayer('${p.id}','${p.display_name}')">Reset</button>
           <button class="btn-xs btn-xs-blue" onclick="adminPossessPlayer('${p.id}')">👤 Possess</button>
+          <button class="btn-xs btn-xs-green" onclick="adminPromotePlayer('${p.id}','${p.display_name}')">⬆️ Promote</button>
           ${p.is_test ? `<button class="btn-xs btn-xs-red" onclick="adminDeleteTestAccount('${p.id}','${p.display_name}')">Delete</button>` : ''}
         </td>
       </tr>`
@@ -2261,7 +2262,14 @@ Currently on space ${currentSpace}`)
   async function adminDeleteTestAccount(playerId, name) {
     if (!confirm(`Permanently delete test account "${name}"? This cannot be undone.`)) return
     await sb.from('profiles').delete().eq('id', playerId)
-    // Note: auth user remains but is harmless without a profile
+    adminRenderPlayers()
+  }
+
+  async function adminPromotePlayer(playerId, name) {
+    if (!confirm(`Promote ${name} to admin?\n\nThey will have full access to the admin panel.`)) return
+    const { error } = await sb.from('profiles').update({ role: 'admin' }).eq('id', playerId)
+    if (error) { alert(error.message); return }
+    await adminLog(`Promoted ${name} to admin`)
     adminRenderPlayers()
   }
 
