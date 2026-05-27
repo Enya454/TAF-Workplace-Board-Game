@@ -1632,123 +1632,99 @@
   // Called from advanceSpace — animates the avatar moving through spaces
   async function animatePlayerMove(fromSpace, toSpace) {
     if (!boardPositions.length) return
-    const svg = document.getElementById('board-svg')
-    if (!svg) return
-
     const fromIdx = fromSpace - 1
-    const toIdx   = toSpace - 1
+    const toIdx   = toSpace  - 1
     if (!boardPositions[fromIdx] || !boardPositions[toIdx]) return
 
     const from = boardPositions[fromIdx]
     const to   = boardPositions[toIdx]
-    const ANIM_R = 30
+    const svg  = document.getElementById('board-svg')
+    if (!svg) return
 
-    // Focus on from space
-    boardFocusPosition(fromIdx, true, 3)
-    await new Promise(r => setTimeout(r, 350))
+    // Step 1: smoothly tween camera to my space view (same zoom as My Space button)
+    boardFocusPosition(fromIdx, true, 900)    // animated tween
+    await new Promise(r => setTimeout(r, 550)) // wait for tween to finish
 
-    // Build animated avatar
+    const ANIM_R   = 30
+    const DURATION = 650
+
+    // Build animated avatar on top of from-space
     const animG = document.createElementNS('http://www.w3.org/2000/svg','g')
     animG.setAttribute('id','anim-avatar')
 
     const halo = document.createElementNS('http://www.w3.org/2000/svg','circle')
-    halo.setAttribute('cx', from.x); halo.setAttribute('cy', from.y)
-    halo.setAttribute('r', ANIM_R + 14)
-    halo.setAttribute('fill', 'rgba(255,255,255,0.1)')
+    halo.setAttribute('r', ANIM_R + 14); halo.setAttribute('fill','rgba(255,255,255,0.1)')
     animG.appendChild(halo)
 
     const ring = document.createElementNS('http://www.w3.org/2000/svg','circle')
-    ring.setAttribute('cx', from.x); ring.setAttribute('cy', from.y)
     ring.setAttribute('r', ANIM_R + 4)
-    ring.setAttribute('fill', 'rgba(0,0,0,0.5)')
-    ring.setAttribute('stroke', '#fff'); ring.setAttribute('stroke-width', '4')
+    ring.setAttribute('fill','rgba(0,0,0,0.5)')
+    ring.setAttribute('stroke','#fff'); ring.setAttribute('stroke-width','4')
     animG.appendChild(ring)
 
     const clipId = 'anim-clip-' + Date.now()
-    const defsEl = svg.querySelector('defs') || svg.insertBefore(document.createElementNS('http://www.w3.org/2000/svg','defs'), svg.firstChild)
-    const clip   = document.createElementNS('http://www.w3.org/2000/svg','clipPath')
+    const defsEl = svg.querySelector('defs') || svg.insertBefore(
+      document.createElementNS('http://www.w3.org/2000/svg','defs'), svg.firstChild)
+    const clip = document.createElementNS('http://www.w3.org/2000/svg','clipPath')
     clip.setAttribute('id', clipId)
     const cc = document.createElementNS('http://www.w3.org/2000/svg','circle')
-    cc.setAttribute('cx', from.x); cc.setAttribute('cy', from.y); cc.setAttribute('r', ANIM_R)
-    clip.appendChild(cc); defsEl.appendChild(clip)
+    cc.setAttribute('r', ANIM_R); clip.appendChild(cc); defsEl.appendChild(clip)
 
     const url = getAvatarUrl(currentProfile)
     if (url) {
       const img = document.createElementNS('http://www.w3.org/2000/svg','image')
-      img.setAttribute('href', url)
-      img.setAttribute('x', from.x - ANIM_R); img.setAttribute('y', from.y - ANIM_R)
-      img.setAttribute('width', ANIM_R * 2); img.setAttribute('height', ANIM_R * 2)
-      img.setAttribute('clip-path', `url(#${clipId})`)
-      img.setAttribute('preserveAspectRatio','xMidYMid slice')
+      img.setAttribute('href', url); img.setAttribute('width', ANIM_R*2); img.setAttribute('height', ANIM_R*2)
+      img.setAttribute('clip-path',`url(#${clipId})`); img.setAttribute('preserveAspectRatio','xMidYMid slice')
       animG.appendChild(img)
     } else {
       const bg = document.createElementNS('http://www.w3.org/2000/svg','circle')
-      bg.setAttribute('cx', from.x); bg.setAttribute('cy', from.y); bg.setAttribute('r', ANIM_R)
+      bg.setAttribute('r', ANIM_R)
       bg.setAttribute('fill', stringToColour(currentProfile.id || currentProfile.display_name))
-      bg.setAttribute('clip-path', `url(#${clipId})`)
-      animG.appendChild(bg)
+      bg.setAttribute('clip-path',`url(#${clipId})`); animG.appendChild(bg)
       const txt = document.createElementNS('http://www.w3.org/2000/svg','text')
-      txt.setAttribute('x', from.x); txt.setAttribute('y', from.y)
       txt.setAttribute('text-anchor','middle'); txt.setAttribute('dominant-baseline','middle')
       txt.setAttribute('fill','#fff'); txt.setAttribute('font-weight','900')
-      txt.setAttribute('font-family','Barlow Condensed, sans-serif')
-      txt.setAttribute('font-size','24')
-      txt.textContent = initials(currentProfile.display_name)
-      animG.appendChild(txt)
+      txt.setAttribute('font-family','Barlow Condensed, sans-serif'); txt.setAttribute('font-size','24')
+      txt.textContent = initials(currentProfile.display_name); animG.appendChild(txt)
     }
+
+    // Position all elements at from
+    function moveAnim(cx, cy) {
+      halo.setAttribute('cx',cx); halo.setAttribute('cy',cy)
+      ring.setAttribute('cx',cx); ring.setAttribute('cy',cy)
+      cc.setAttribute('cx',cx);   cc.setAttribute('cy',cy)
+      const img = animG.querySelector('image')
+      const txt = animG.querySelector('text')
+      const bg  = animG.querySelectorAll('circle')[2]
+      if (img) { img.setAttribute('x', cx-ANIM_R); img.setAttribute('y', cy-ANIM_R) }
+      if (txt) { txt.setAttribute('x',cx); txt.setAttribute('y',cy) }
+      if (bg)  { bg.setAttribute('cx',cx); bg.setAttribute('cy',cy) }
+    }
+
+    moveAnim(from.x, from.y)
     svg.appendChild(animG)
 
-    // Zoom level that shows ~4-5 spaces — wide enough to see context during move
-    // Distance between from and to determines how wide to set the view
-    const dist      = Math.hypot(to.x - from.x, to.y - from.y)
-    const ANIM_ZOOM = Math.max(900, dist * 3.5)
-    const viewport2 = document.getElementById('board-viewport')
-    const aspect    = viewport2 ? viewport2.clientHeight / viewport2.clientWidth : 0.75
-    const animVbW   = ANIM_ZOOM
-    const animVbH   = ANIM_ZOOM * aspect
-
-    // Start camera centred on from-space at this zoom
-    vbW = animVbW; vbH = animVbH
-    vbX = from.x - animVbW / 2; vbY = from.y - animVbH / 2
-    const svgEl = document.getElementById('board-svg')
-    if (svgEl) svgEl.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
-
-    // Tween avatar from→to, camera follows
-    const DURATION = 700
-    const start    = performance.now()
-
+    // Step 2: tween avatar from → to, camera follows by updating viewBox
+    const startTime = performance.now()
     await new Promise(resolve => {
       function step(now) {
-        const t    = Math.min((now - start) / DURATION, 1)
-        const ease = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2
+        const t    = Math.min((now - startTime) / DURATION, 1)
+        const ease = t < 0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2, 3)/2
         const cx   = from.x + (to.x - from.x) * ease
         const cy   = from.y + (to.y - from.y) * ease
-
-        halo.setAttribute('cx', cx); halo.setAttribute('cy', cy)
-        ring.setAttribute('cx', cx); ring.setAttribute('cy', cy)
-        cc.setAttribute('cx', cx);   cc.setAttribute('cy', cy)
-        const img2 = animG.querySelector('image')
-        const txt2 = animG.querySelector('text')
-        const bg2  = animG.querySelectorAll('circle')[2]
-        if (img2) { img2.setAttribute('x', cx - ANIM_R); img2.setAttribute('y', cy - ANIM_R) }
-        if (txt2) { txt2.setAttribute('x', cx); txt2.setAttribute('y', cy) }
-        if (bg2)  { bg2.setAttribute('cx', cx); bg2.setAttribute('cy', cy) }
-
-        // Camera follows — keep avatar centred using fixed zoom
-        vbX = cx - animVbW / 2
-        vbY = cy - animVbH / 2
-        if (svgEl) svgEl.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
-
+        moveAnim(cx, cy)
+        // Pan viewBox to keep avatar centred (keep same vbW/vbH = same zoom)
+        vbX = cx - vbW / 2
+        vbY = cy - vbH / 2
+        svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
         if (t < 1) requestAnimationFrame(step)
         else resolve()
       }
       requestAnimationFrame(step)
     })
 
+    // Clean up
     animG.remove(); clip.remove()
-    // Settle on destination at same zoom level
-    boardFocusPosition(toIdx, true, ANIM_ZOOM)
-    await new Promise(r => setTimeout(r, 250))
   }
 
   // ════════════════════════════════
