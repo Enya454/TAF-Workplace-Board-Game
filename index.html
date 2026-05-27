@@ -1212,9 +1212,9 @@
     boardSpaces = spacesRes.data  || []
     boardConfig = configRes.data  || { green_tasks_required:1, blue_tasks_required:2, red_tasks_required:3, total_spaces:40 }
 
-    // Only show staff + admins who have opted in to appear on the board
+    // Only show staff + supervisors/admins who have opted in (supervisors default hidden)
     allPlayers = (playersRes.data || []).filter(p =>
-      p.role === 'staff' || p.role === 'supervisor' || (p.role === 'admin' && p.appear_on_board)
+      p.role === 'staff' || (p.role === 'supervisor' && p.appear_on_board !== false) || (p.role === 'admin' && p.appear_on_board)
     )
 
     renderNav()
@@ -1229,7 +1229,7 @@
   async function refreshPlayers() {
     const { data } = await sb.from('profiles').select('*').order('laps_completed',{ascending:false})
     allPlayers = (data || []).filter(p =>
-      p.role === 'staff' || p.role === 'supervisor' || (p.role === 'admin' && p.appear_on_board)
+      p.role === 'staff' || (p.role === 'supervisor' && p.appear_on_board !== false) || (p.role === 'admin' && p.appear_on_board)
     )
     renderBoard()
     renderSidePanel()
@@ -2113,7 +2113,7 @@
 
   // ── PLAYERS ──
   async function adminRenderPlayers() {
-    const { data: players } = await sb.from('profiles').select('*').eq('role','staff').order('laps_completed',{ascending:false})
+    const { data: players } = await sb.from('profiles').select('*').order('laps_completed',{ascending:false})
     const { data: spaces }  = await sb.from('board_spaces').select('*').order('position')
     const el = document.getElementById('admin-content')
 
@@ -2335,7 +2335,12 @@ Currently on space ${currentSpace}`)
     }
 
     if (!confirm(`Change ${name}'s role to ${newRole}?`)) return
-    const { error } = await sb.from('profiles').update({ role: newRole }).eq('id', playerId)
+    const updates = { role: newRole }
+    // Supervisors default to hidden on board
+    if (newRole === 'supervisor') updates.appear_on_board = false
+    // Staff going back to board automatically visible
+    if (newRole === 'staff') updates.appear_on_board = null
+    const { error } = await sb.from('profiles').update(updates).eq('id', playerId)
     if (error) { alert(error.message); return }
     await adminLog(`Changed ${name}'s role to ${newRole}`)
     adminRenderPlayers()
