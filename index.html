@@ -1150,8 +1150,9 @@
   let boardSvgW       = 3000  // logical SVG width — high res
   let boardSvgH       = 2400  // logical SVG height
   // viewBox camera state stored in vbX/vbY/vbW/vbH below
-  let boardFocusIdx   = -1    // which space index is currently focused (-1 = full board)
-  let boardPlayerIdx  = 0     // which player we're tracking in player nav
+  let boardFocusIdx     = -1   // which space index is currently focused (-1 = full board)
+  let boardPlayerIdx    = 0    // which player we're tracking in player nav
+  let boardInitialRender = true // true on first render — suppress on refreshPlayers calls
   let isDragging      = false
   let dragStartX      = 0, dragStartY = 0, dragCamX = 0, dragCamY = 0
 
@@ -1270,6 +1271,7 @@
   //  GAME INIT
   // ════════════════════════════════
   async function initGame() {
+    boardInitialRender = true
     showPage('game')
     const [spacesRes, playersRes, configRes] = await Promise.all([
       sb.from('board_spaces').select('*').order('position'),
@@ -1741,13 +1743,13 @@
       .on('postgres_changes', {
         event:  'UPDATE',
         schema: 'public',
-        table:  'profiles',
-        filter: `role=eq.staff`
+        table:  'profiles'
       }, payload => {
         const updated = payload.new
         const old     = payload.old
         // Ignore our own moves — we already animate those
-        if (updated.id === effectiveId()) return
+        const myId = effectiveId() || currentUser?.id
+        if (updated.id === myId) return
         // Only animate if space actually changed
         if (updated.current_space !== old.current_space) {
           animateOtherPlayer(updated, old.current_space, updated.current_space)
@@ -2254,20 +2256,28 @@
     const fullVbH    = svgH + BADGE_OVERHANG
     svg.setAttribute('data-full-viewbox', `0 ${fullVbOffY} ${WIDTH} ${fullVbH}`)
 
-    // Set viewBox directly to my space — no animation, no flash
-    const myIdx     = (currentProfile?.current_space || 1) - 1
-    const myPos     = positions[myIdx]
-    const viewport  = document.getElementById('board-viewport')
-    const aspect    = viewport ? viewport.clientHeight / viewport.clientWidth : 0.75
-    const initZoomW = 900
-    if (myPos) {
-      vbW = initZoomW; vbH = initZoomW * aspect
-      vbX = myPos.x - vbW / 2; vbY = myPos.y - vbH / 2
-    } else {
-      vbX = 0; vbY = fullVbOffY; vbW = WIDTH; vbH = fullVbH
+    // Only set the viewBox on the very first render — subsequent renders
+    // (from refreshPlayers / realtime updates) should leave the camera alone
+    if (boardInitialRender) {
+      const myIdx    = (currentProfile?.current_space || 1) - 1
+      const myPos    = positions[myIdx]
+      const viewport = document.getElementById('board-viewport')
+      const aspect   = viewport ? viewport.clientHeight / viewport.clientWidth : 0.75
+      const initZoomW = 900
+      if (myPos) {
+        vbW = initZoomW; vbH = initZoomW * aspect
+        vbX = myPos.x - vbW / 2; vbY = myPos.y - vbH / 2
+      } else {
+        vbX = 0; vbY = fullVbOffY; vbW = WIDTH; vbH = fullVbH
+      }
+      svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
+      boardFocusIdx    = myIdx
+      boardInitialRender = false
     }
-    svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
-    boardFocusIdx = myIdx
+    // On re-renders keep current viewBox — just re-apply it so SVG doesn't reset
+    else {
+      svg.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`)
+    }
   }
 
   // ════════════════════════════════
