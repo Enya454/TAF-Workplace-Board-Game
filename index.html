@@ -1287,7 +1287,7 @@
       const rangeX = maxX - minX || 1
       const rangeY = maxY - minY || 1
       const drawW = WIDTH - PAD * 2
-      const drawH = Math.max(300, Math.round(drawW * (rangeY / rangeX)))
+      const drawH = Math.max(500, Math.round(drawW * (rangeY / rangeX)))
       svgH = drawH + PAD * 2
       positions = boardSpaces.map(s => ({
         x: PAD + ((s.x ?? 0.5) - minX) / rangeX * drawW,
@@ -2640,7 +2640,7 @@ Currently on space ${currentSpace}`)
   let shapeDragIdx   = -1   // which node is being dragged
   let shapeTool      = 'move'  // 'move' | 'add' | 'delete'
   let shapeCanvasW   = 600
-  let shapeCanvasH   = 420
+  let shapeCanvasH   = 680
 
   // ── Board shape presets ──
   const BOARD_SHAPES = {
@@ -2818,7 +2818,7 @@ Currently on space ${currentSpace}`)
             <div class="shape-tool shape-preset-btn"        id="spreset-wave"      onclick="loadPresetShape('wave')">🌊 Wave</div>
           </div>
           <div class="shape-canvas-wrap">
-            <canvas id="shape-canvas" height="420"></canvas>
+            <canvas id="shape-canvas" height="680"></canvas>
           </div>
           <div style="display:flex;gap:0.6rem;flex-wrap:wrap;align-items:center;">
             <button class="btn btn-red" onclick="applyShapeToBoard()">✓ Apply Shape to Board</button>
@@ -3067,15 +3067,21 @@ Currently on space ${currentSpace}`)
         return
     }
 
-    // Build shapeNodes preserving existing colours where possible
-    const colours = ['green','green','green','blue','blue','red','red']
+    // Auto-scale pts to fill more of the canvas with generous padding
+    const PAD = 40
+    const allX = pts.map(p => p.x), allY = pts.map(p => p.y)
+    const minX = Math.min(...allX), maxX = Math.max(...allX)
+    const minY = Math.min(...allY), maxY = Math.max(...allY)
+    const rangeX = maxX - minX || 1, rangeY = maxY - minY || 1
+    const drawW = W - PAD * 2, drawH = H - PAD * 2
+
     shapeNodes = pts.map((pt, i) => ({
       position: i + 1,
       colour: shapeNodes[i]?.colour || (
         i < pts.length * 0.45 ? 'green' : i < pts.length * 0.72 ? 'blue' : 'red'
       ),
-      x: Math.max(14, Math.min(W - 14, pt.x)),
-      y: Math.max(14, Math.min(H - 14, pt.y))
+      x: PAD + ((pt.x - minX) / rangeX) * drawW,
+      y: PAD + ((pt.y - minY) / rangeY) * drawH
     }))
 
     // Mark active preset
