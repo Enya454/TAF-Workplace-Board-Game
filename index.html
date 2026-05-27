@@ -94,60 +94,97 @@
 
     .game-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
 
-    /* ── Board area ── */
-    .board-area { flex: 1; overflow-y: auto; padding: 1rem; display: flex; flex-direction: column; align-items: stretch; gap: 0.75rem; }
+    /* ════════════════════════════
+       GAME LAYOUT
+    ════════════════════════════ */
+    #page-game { flex-direction: column; height: 100vh; overflow: hidden; }
+    .game-body { flex: 1; display: flex; overflow: hidden; min-height: 0; }
 
-    /* ── Top info row: player badge + task panel side by side ── */
-    .top-info-row {
-      width: 100%; max-width: 740px; flex-shrink: 0;
-      display: flex; gap: 0.75rem; align-items: stretch;
+    /* ── Left sidebar ── */
+    .game-left {
+      width: 240px; flex-shrink: 0;
+      background: var(--dark-2); border-right: 1px solid rgba(255,255,255,0.07);
+      display: flex; flex-direction: column; overflow: hidden;
     }
 
-    /* ── Player badge ── */
-    .player-badge {
-      display: flex; flex-direction: column; align-items: center; gap: 0.5rem;
-      background: var(--dark-2); border: 1px solid rgba(255,255,255,0.08);
-      border-radius: var(--radius); padding: 0.9rem 1.1rem;
-      flex-shrink: 0; min-width: 140px;
+    /* Player card */
+    .player-card {
+      padding: 1.1rem 1rem 0.9rem; border-bottom: 1px solid rgba(255,255,255,0.07);
+      display: flex; flex-direction: column; align-items: center; gap: 0.5rem; flex-shrink: 0;
     }
-    .badge-avatar-col { display: flex; flex-direction: column; align-items: center; gap: 0.45rem; }
-    .badge-stars { display: flex; gap: 0.3rem; }
-    .badge-star { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.2); background: var(--dark-3); transition: background 0.2s, border-color 0.2s; }
-    .badge-star.filled { background: gold; border-color: #f59e0b; box-shadow: 0 0 6px rgba(245,158,11,0.5); }
-    .badge-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 1rem; text-transform: uppercase; letter-spacing: 0.02em; line-height: 1; text-align: center; }
-    .badge-row { display: flex; gap: 0.9rem; flex-wrap: wrap; justify-content: center; margin-top: 0.1rem; }
+    .badge-stars { display: flex; gap: 0.35rem; }
+    .badge-star { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid rgba(255,255,255,0.15); background: var(--dark-3); transition: background 0.2s; flex-shrink: 0; }
+    .badge-star.filled { background: gold; border-color: #f59e0b; box-shadow: 0 0 7px rgba(245,158,11,0.5); }
+    .badge-name { font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.02em; text-align: center; line-height: 1.1; }
+    .badge-row { display: flex; gap: 0.7rem; justify-content: center; flex-wrap: wrap; }
     .badge-stat { display: flex; flex-direction: column; align-items: center; }
-    .badge-stat-val { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1.2rem; line-height: 1; }
-    .badge-stat-label { font-size: 0.6rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--grey); margin-top: 0.1rem; }
+    .badge-stat-val { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1.3rem; line-height: 1; }
+    .badge-stat-label { font-size: 0.58rem; letter-spacing: 0.07em; text-transform: uppercase; color: var(--grey); margin-top: 0.1rem; }
 
-    /* ── Space banner ── */
-    .space-banner { width: 100%; border-radius: var(--radius); padding: 0.9rem 1.2rem; display: flex; align-items: center; gap: 0.9rem; flex-shrink: 0; }
-    .space-banner.green { background: var(--green-bg); border: 1px solid var(--green-border); }
-    .space-banner.blue  { background: var(--blue-s-bg); border: 1px solid var(--blue-s-border); }
-    .space-banner.red   { background: var(--red-s-bg);  border: 1px solid var(--red-s-border); }
-    .banner-icon { font-size: 1.6rem; flex-shrink: 0; }
-    .banner-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 0.04em; }
-    .banner-sub { font-size: 0.8rem; color: var(--grey-light); margin-top: 0.1rem; }
+    /* Space banner */
+    .space-banner {
+      padding: 0.7rem 1rem; flex-shrink: 0;
+      display: flex; align-items: flex-start; gap: 0.55rem;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .space-banner.green { background: var(--green-bg); border-left: 3px solid var(--green); }
+    .space-banner.blue  { background: var(--blue-s-bg); border-left: 3px solid var(--blue-s); }
+    .space-banner.red   { background: var(--red-s-bg);  border-left: 3px solid var(--red); }
+    .banner-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px; }
+    .banner-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .banner-sub { font-size: 0.7rem; color: var(--grey-light); margin-top: 0.1rem; line-height: 1.3; }
     .space-banner.green .banner-title { color: var(--green); }
     .space-banner.blue  .banner-title { color: #60aaff; }
     .space-banner.red   .banner-title { color: #ff7088; }
 
-    /* ════════════════════════════
-       SINE-WAVE SVG BOARD
-    ════════════════════════════ */
-    .board-svg-wrap {
-      width: 100%;
-      background: var(--dark-2);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 20px;
-      overflow: visible;
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
+    /* Task panel */
+    .task-panel { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+    .task-panel-header { padding: 0.6rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .task-panel-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.04em; }
+    .task-panel-title.green { color: var(--green); } .task-panel-title.blue { color: #60aaff; } .task-panel-title.red { color: #ff7088; }
+    .task-status-badge { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.62rem; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.15rem 0.45rem; border-radius: 99px; }
+    .task-status-badge.done { background: rgba(34,197,94,0.15); color: var(--green); border: 1px solid rgba(34,197,94,0.3); }
+    .task-status-badge.todo { background: rgba(255,255,255,0.06); color: var(--grey); border: 1px solid rgba(255,255,255,0.1); }
+    .task-panel-body { flex: 1; overflow-y: auto; padding: 0.55rem; display: flex; flex-direction: column; gap: 0.4rem; }
 
-    #board-svg { width: 100%; height: 100%; display: block; }
+    /* Task cards */
+    .task-card { background: var(--dark-3); border: 1px solid rgba(255,255,255,0.06); border-radius: var(--radius-sm); padding: 0.55rem 0.7rem; display: flex; align-items: flex-start; gap: 0.55rem; }
+    .task-card:hover { border-color: rgba(255,255,255,0.12); }
+    .task-card.done-card { opacity: 0.45; }
+    .task-card-info { flex: 1; min-width: 0; }
+    .task-card-title { font-weight: 600; font-size: 0.78rem; line-height: 1.3; }
+    .task-card-desc { font-size: 0.68rem; color: var(--grey-light); line-height: 1.35; margin-top: 0.15rem; }
+    .task-colour-pip { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+    .task-colour-pip.green { background: var(--green); } .task-colour-pip.blue { background: var(--blue-s); } .task-colour-pip.red { background: var(--red); }
+    .task-btns { display: flex; flex-direction: column; gap: 0.28rem; flex-shrink: 0; }
+    .task-btn { border: none; border-radius: 6px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.68rem; letter-spacing: 0.03em; text-transform: uppercase; padding: 0.28rem 0.5rem; cursor: pointer; white-space: nowrap; transition: background 0.15s; }
+    .task-btn-complete { background: var(--green); color: #000; }
+    .task-btn-complete:hover { background: #16a34a; }
+    .task-btn-complete:disabled { opacity: 0.4; cursor: not-allowed; }
+    .task-btn-bank { background: rgba(245,158,11,0.12); color: #f59e0b; border: 1px solid rgba(245,158,11,0.25); }
+    .task-btn-bank:hover:not(:disabled) { background: rgba(245,158,11,0.22); }
+    .task-btn-bank:disabled { opacity: 0.35; cursor: not-allowed; }
+    .banked-section { padding-top: 0.35rem; margin-top: 0.2rem; border-top: 1px solid rgba(255,255,255,0.06); }
+    .banked-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: #f59e0b; margin-bottom: 0.3rem; }
+    .banked-card { background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.18); border-radius: 6px; padding: 0.35rem 0.55rem; display: flex; align-items: center; gap: 0.45rem; margin-bottom: 0.28rem; }
+    .banked-card-name { flex: 1; font-size: 0.72rem; font-weight: 600; }
+    .banked-use-btn { background: #f59e0b; color: #000; border: none; border-radius: 5px; font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.62rem; text-transform: uppercase; padding: 0.22rem 0.45rem; cursor: pointer; white-space: nowrap; }
+    .banked-use-btn:hover { background: #d97706; }
+    .tasks-empty { text-align: center; padding: 0.9rem; color: var(--grey); font-size: 0.75rem; }
+
+    /* Advance/skip */
+    .advance-wrap { padding: 0.65rem; display: flex; flex-direction: column; gap: 0.45rem; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; background: var(--dark-2); }
+    .btn-advance { width: 100%; background: var(--green); color: #000; border: none; border-radius: var(--radius-sm); font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 0.95rem; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.7rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.4rem; transition: background 0.15s, transform 0.1s; box-shadow: 0 3px 12px rgba(34,197,94,0.2); }
+    .btn-advance:hover:not(:disabled) { background: #16a34a; }
+    .btn-advance:active:not(:disabled) { transform: scale(0.98); }
+    .btn-advance:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+    .btn-skip { width: 100%; background: rgba(59,130,246,0.1); color: #60aaff; border: 1px solid rgba(59,130,246,0.25); border-radius: var(--radius-sm); font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 0.78rem; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.55rem; cursor: pointer; transition: background 0.15s; }
+    .btn-skip:hover:not(:disabled) { background: rgba(59,130,246,0.2); }
+    .btn-skip:disabled { opacity: 0.3; cursor: not-allowed; }
+
+    /* ── Board (centre) ── */
+    .board-area { flex: 1; overflow: auto; background: var(--dark); display: flex; align-items: flex-start; justify-content: center; min-width: 0; }
+    .board-svg-wrap { width: 100%; max-width: 1200px; padding: 1.5rem; flex-shrink: 0; }
 
 
     /* Space circles */
@@ -670,15 +707,32 @@
     }
     .tooltip-av img { width: 100%; height: 100%; object-fit: cover; }
 
+    /* ── Mobile sheet ── */
+    .mobile-sheet {
+      display: none;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 150;
+      background: var(--dark-2);
+      border-top: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -8px 32px rgba(0,0,0,0.5);
+      transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+      transform: translateY(calc(100% - 52px));
+    }
+    .mobile-sheet.open { transform: translateY(0); }
+    .mobile-sheet-handle {
+      width: 36px; height: 4px; border-radius: 99px;
+      background: rgba(255,255,255,0.2); margin: 10px auto 0; cursor: pointer;
+    }
+    .mobile-sheet-content { padding: 0.75rem 1rem 1.5rem; }
+    .mobile-sheet-top { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.75rem; }
+
     /* ── Mobile responsive (must be last to override earlier rules) ── */
     @media (max-width: 700px) {
       /* Game */
+      .game-left { display: none !important; }
       .side-panel { display: none !important; }
-      .board-area { padding: 0.75rem; }
-      .top-info-row { flex-direction: column; }
-      .task-panel { min-height: 160px; }
-      .advance-wrap { flex-direction: column; }
-      .btn-advance, .btn-skip { width: 100%; }
+      .board-area { padding: 0 !important; }
+      .mobile-sheet { display: block !important; }
 
       /* Admin — hide desktop sidebar, show bottom tabs */
       #page-admin { flex-direction: column; }
@@ -740,6 +794,8 @@
 
 <!-- ══ GAME ══ -->
 <div class="page" id="page-game">
+
+  <!-- Top nav bar -->
   <nav class="game-nav">
     <div class="game-nav-left">
       <span class="nav-logo">AF</span>
@@ -751,49 +807,33 @@
   </nav>
 
   <div class="game-body">
-    <div class="board-area">
 
-      <!-- Top info row: player badge + task panel side by side -->
-      <div class="top-info-row">
+    <!-- ── LEFT SIDEBAR ── -->
+    <div class="game-left">
 
-        <!-- Player badge -->
-        <div class="player-badge">
-          <div class="badge-avatar-col">
-            <div class="av lg clickable" id="nav-avatar" onclick="openAvatarModal()" title="Change avatar"></div>
-            <div class="badge-stars">
-              <div class="badge-star" id="bank-star-0"></div>
-              <div class="badge-star" id="bank-star-1"></div>
-              <div class="badge-star" id="bank-star-2"></div>
-            </div>
+      <!-- Player card -->
+      <div class="player-card">
+        <div class="av lg clickable" id="nav-avatar" onclick="openAvatarModal()" title="Change avatar"></div>
+        <div class="badge-stars">
+          <div class="badge-star" id="bank-star-0"></div>
+          <div class="badge-star" id="bank-star-1"></div>
+          <div class="badge-star" id="bank-star-2"></div>
+        </div>
+        <div class="badge-name" id="badge-name"></div>
+        <div class="badge-row">
+          <div class="badge-stat">
+            <div class="badge-stat-val c-red" id="stat-space">—</div>
+            <div class="badge-stat-label">Space</div>
           </div>
-          <div class="badge-name" id="badge-name"></div>
-          <div class="badge-row">
-            <div class="badge-stat">
-              <div class="badge-stat-val c-red" id="stat-space">—</div>
-              <div class="badge-stat-label">Space</div>
-            </div>
-            <div class="badge-stat">
-              <div class="badge-stat-val c-green" id="stat-laps">—</div>
-              <div class="badge-stat-label">Laps</div>
-            </div>
-            <div class="badge-stat">
-              <div class="badge-stat-val c-blue" id="stat-tickets">—</div>
-              <div class="badge-stat-label">Tickets</div>
-            </div>
+          <div class="badge-stat">
+            <div class="badge-stat-val c-green" id="stat-laps">—</div>
+            <div class="badge-stat-label">Laps</div>
+          </div>
+          <div class="badge-stat">
+            <div class="badge-stat-val c-blue" id="stat-tickets">—</div>
+            <div class="badge-stat-label">Tickets</div>
           </div>
         </div>
-
-        <!-- Task panel (fills remaining width) -->
-        <div class="task-panel">
-          <div class="task-panel-header">
-            <span class="task-panel-title" id="task-panel-title">Tasks</span>
-            <span class="task-status-badge todo" id="task-status-badge">Not Done</span>
-          </div>
-          <div class="task-panel-body" id="task-panel-body">
-            <div class="tasks-empty">Loading tasks...</div>
-          </div>
-        </div>
-
       </div>
 
       <!-- Space banner -->
@@ -805,7 +845,18 @@
         </div>
       </div>
 
-      <!-- Move forward / skip ticket -->
+      <!-- Task panel -->
+      <div class="task-panel">
+        <div class="task-panel-header">
+          <span class="task-panel-title" id="task-panel-title">Tasks</span>
+          <span class="task-status-badge todo" id="task-status-badge">Not Done</span>
+        </div>
+        <div class="task-panel-body" id="task-panel-body">
+          <div class="tasks-empty">Loading tasks...</div>
+        </div>
+      </div>
+
+      <!-- Advance / skip -->
       <div class="advance-wrap">
         <button class="btn-advance" id="btn-advance" onclick="advanceSpace()" disabled>
           ✦ Move Forward
@@ -815,19 +866,55 @@
         </button>
       </div>
 
+    </div>
+
+    <!-- ── BOARD (centre) ── -->
+    <div class="board-area">
       <div class="board-svg-wrap">
         <svg id="board-svg" xmlns="http://www.w3.org/2000/svg"></svg>
       </div>
     </div>
 
-    <!-- Players list panel (right) -->
+    <!-- ── RIGHT SIDEBAR — players list ── -->
     <div class="side-panel">
       <div class="panel-section">
         <div class="panel-title">All Players</div>
         <div id="players-list"></div>
       </div>
     </div>
+
   </div>
+
+  <!-- Mobile bottom sheet (hidden on desktop) -->
+  <div class="mobile-sheet" id="mobile-sheet">
+    <div class="mobile-sheet-handle" onclick="toggleMobileSheet()"></div>
+    <div class="mobile-sheet-content">
+      <div class="mobile-sheet-top">
+        <div class="av sm" id="mobile-avatar"></div>
+        <div>
+          <div class="badge-name" id="mobile-name" style="font-size:0.9rem;"></div>
+          <div class="badge-row" style="justify-content:flex-start;gap:0.6rem;margin-top:0.2rem;">
+            <span class="badge-stat-val c-red" id="mobile-space" style="font-size:1rem;">—</span><span class="badge-stat-label">Space</span>
+            <span class="badge-stat-val c-green" id="mobile-laps" style="font-size:1rem;">—</span><span class="badge-stat-label">Laps</span>
+            <span class="badge-stat-val c-blue" id="mobile-tickets" style="font-size:1rem;">—</span><span class="badge-stat-label">Tickets</span>
+          </div>
+        </div>
+      </div>
+      <div class="space-banner" id="mobile-banner" style="border-radius:var(--radius-sm);margin-bottom:0.5rem;">
+        <div class="banner-icon" id="mobile-banner-icon">🟢</div>
+        <div>
+          <div class="banner-title" id="mobile-banner-title"></div>
+          <div class="banner-sub" id="mobile-banner-sub"></div>
+        </div>
+      </div>
+      <div id="mobile-task-body" style="display:flex;flex-direction:column;gap:0.4rem;max-height:220px;overflow-y:auto;"></div>
+      <div style="display:flex;gap:0.5rem;margin-top:0.6rem;">
+        <button class="btn-advance" id="mobile-btn-advance" onclick="advanceSpace()" disabled style="flex:1;font-size:0.85rem;padding:0.65rem;">✦ Move Forward</button>
+        <button class="btn-skip" id="mobile-btn-skip" onclick="useSkipTicket()" disabled style="font-size:0.75rem;padding:0.65rem;">🎟 Skip</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ══ ADMIN ══ -->
@@ -1191,19 +1278,58 @@
   }
 
   function renderPlayerBadge() {
-    document.getElementById('badge-name').textContent = currentProfile.display_name
+    document.getElementById('badge-name').textContent   = currentProfile.display_name
     document.getElementById('stat-space').textContent   = currentProfile.current_space ?? 1
     document.getElementById('stat-laps').textContent    = currentProfile.laps_completed ?? 0
     document.getElementById('stat-tickets').textContent = currentProfile.skip_tickets ?? 0
-    // Render avatar in badge
     renderAvEl(document.getElementById('nav-avatar'), currentProfile)
-    // Banked task stars
     const banked = Array.isArray(currentProfile.banked_tasks) ? currentProfile.banked_tasks : []
     for (let i = 0; i < 3; i++) {
       const star = document.getElementById('bank-star-' + i)
-      if (i < banked.length) star.classList.add('filled')
-      else star.classList.remove('filled')
+      if (star) { if (i < banked.length) star.classList.add('filled'); else star.classList.remove('filled') }
     }
+    // Sync mobile sheet
+    const mn = document.getElementById('mobile-name')
+    const ms = document.getElementById('mobile-space')
+    const ml = document.getElementById('mobile-laps')
+    const mt = document.getElementById('mobile-tickets')
+    const ma = document.getElementById('mobile-avatar')
+    if (mn) mn.textContent = currentProfile.display_name
+    if (ms) ms.textContent = currentProfile.current_space ?? 1
+    if (ml) ml.textContent = currentProfile.laps_completed ?? 0
+    if (mt) mt.textContent = currentProfile.skip_tickets ?? 0
+    if (ma) renderAvEl(ma, currentProfile)
+    // Sync mobile advance/skip
+    const mba = document.getElementById('mobile-btn-advance')
+    const mbs = document.getElementById('mobile-btn-skip')
+    const isDone = (currentProfile.space_tasks_completed || 0) >= 1
+    const hasTicket = (currentProfile.skip_tickets || 0) > 0
+    if (mba) mba.disabled = !isDone
+    if (mbs) { mbs.disabled = !hasTicket; mbs.textContent = hasTicket ? `🎟 Skip (${currentProfile.skip_tickets})` : '🎟 No Tickets' }
+  }
+
+  function toggleMobileSheet() {
+    document.getElementById('mobile-sheet')?.classList.toggle('open')
+  }
+
+  function syncMobileBanner() {
+    const s = boardSpaces.find(sp => sp.position === (currentProfile.current_space || 1))
+    if (!s) return
+    const mb = document.getElementById('mobile-banner')
+    if (mb) mb.className = `space-banner ${s.colour}`
+    const mbi = document.getElementById('mobile-banner-icon')
+    const mbt = document.getElementById('mobile-banner-title')
+    const mbs = document.getElementById('mobile-banner-sub')
+    const ICONS = { green:'🟢', blue:'🔵', red:'🔴' }
+    const LABELS = { green:'Green Space — Easy Tasks', blue:'Blue Space — Monthly Tasks', red:'Red Space — Hard Tasks' }
+    const DESCS  = { green:'Complete any one task to move forward.', blue:'Monthly rotating tasks.', red:'Tough tasks — complete one to advance.' }
+    if (mbi) mbi.textContent = ICONS[s.colour]
+    if (mbt) mbt.textContent = LABELS[s.colour]
+    if (mbs) mbs.textContent = DESCS[s.colour]
+    // Mirror task body
+    const src  = document.getElementById('task-panel-body')
+    const dest = document.getElementById('mobile-task-body')
+    if (src && dest) dest.innerHTML = src.innerHTML
   }
 
   // ════════════════════════════════
