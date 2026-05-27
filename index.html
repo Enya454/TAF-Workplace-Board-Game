@@ -558,12 +558,14 @@
 
     /* Staff view banner */
     .staff-view-banner {
-      position: fixed; bottom: 0; left: 0; right: 0; z-index: 125;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 150;
       background: #f59e0b; color: #000; padding: 0.6rem 1.5rem;
       display: flex; align-items: center; justify-content: space-between;
       font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
       font-size: 0.95rem; letter-spacing: 0.04em; text-transform: uppercase;
     }
+    /* When staff banner is visible, push task bar above it */
+    .staff-banner-visible .mobile-task-bar { bottom: 44px; }
     .staff-view-banner button {
       background: rgba(0,0,0,0.2); border: none; border-radius: 6px;
       font-family: 'Barlow Condensed', sans-serif; font-weight: 800;
@@ -2668,6 +2670,22 @@
     document.getElementById('btn-skip').textContent = hasTicket
       ? `🎟 Skip (${currentProfile.skip_tickets} left)`
       : '🎟 No Tickets'
+
+    // Mirror task content to mobile task bar
+    const mobileDest = document.getElementById('mobile-task-body')
+    const mobileSrc  = document.getElementById('task-panel-body')
+    if (mobileDest && mobileSrc) mobileDest.innerHTML = mobileSrc.innerHTML
+
+    // Sync mobile peek bar status
+    const mobStatus = document.getElementById('mob-bar-status')
+    if (mobStatus) {
+      mobStatus.textContent  = isDone ? '✓ Done' : 'Tap for tasks'
+      mobStatus.style.color  = isDone ? 'var(--green)' : 'var(--grey)'
+    }
+    const mobAdv = document.getElementById('mobile-btn-advance')
+    const mobSkp = document.getElementById('mobile-btn-skip')
+    if (mobAdv) mobAdv.disabled = !isDone
+    if (mobSkp) mobSkp.disabled = !hasTicket
   }
 
   // Returns the ID to write to — possessed player's ID if possessing, else own
@@ -4501,6 +4519,7 @@ Currently on space ${currentSpace}`)
   function enterStaffView() {
     document.getElementById('staff-view-label').textContent = '👀 Viewing as Staff — changes are real!'
     document.getElementById('staff-view-banner').style.display = 'flex'
+    document.body.classList.add('staff-banner-visible')
     initGame()
   }
 
@@ -4522,6 +4541,7 @@ Currently on space ${currentSpace}`)
     document.getElementById('staff-view-label').textContent =
       `👤 Possessing ${target.display_name} — all actions affect their account!`
     document.getElementById('staff-view-banner').style.display = 'flex'
+    document.body.classList.add('staff-banner-visible')
     await initGame()
   }
 
@@ -4535,6 +4555,7 @@ Currently on space ${currentSpace}`)
       possessedPlayerId  = null
     }
     document.getElementById('staff-view-banner').style.display = 'none'
+    document.body.classList.remove('staff-banner-visible')
     showPage('admin')
     initAdmin()
   }
