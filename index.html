@@ -1263,8 +1263,8 @@
   function renderBoard() {
     const svg   = document.getElementById('board-svg')
     const total = boardSpaces.length
-    const R     = 28
-    const AV    = 10
+    const R     = 18
+    const AV    = 7
     const MAX_VISIBLE = 3
     const PAD   = 90    // extra padding to accommodate START/FINISH badges above top spaces
     const WIDTH = 720
@@ -1319,7 +1319,11 @@
       }
       svgH = PAD + Math.ceil(total / COLS) * (AMP * 2 + R * 2 + 60) + PAD
     }
-    svg.setAttribute('viewBox', `0 0 ${WIDTH} ${svgH}`)
+    // Add extra top margin for START/FINISH badges (pill is ~30px above top space)
+    const BADGE_OVERHANG = 50
+    const viewMinY = -BADGE_OVERHANG
+    const viewH    = svgH + BADGE_OVERHANG
+    svg.setAttribute('viewBox', `0 ${viewMinY} ${WIDTH} ${viewH}`)
     svg.innerHTML = ''
 
     const defs = document.createElementNS('http://www.w3.org/2000/svg','defs')
@@ -1351,11 +1355,11 @@
       // Glow ring for start/end
       if (isStart || isEnd) {
         const glow = document.createElementNS('http://www.w3.org/2000/svg','circle')
-        glow.setAttribute('cx', x); glow.setAttribute('cy', y); glow.setAttribute('r', R + 10)
+        glow.setAttribute('cx', x); glow.setAttribute('cy', y); glow.setAttribute('r', R + 7)
         glow.setAttribute('fill', isStart ? 'rgba(34,197,94,0.18)' : 'rgba(245,158,11,0.18)')
         g.appendChild(glow)
         const glow2 = document.createElementNS('http://www.w3.org/2000/svg','circle')
-        glow2.setAttribute('cx', x); glow2.setAttribute('cy', y); glow2.setAttribute('r', R + 5)
+        glow2.setAttribute('cx', x); glow2.setAttribute('cy', y); glow2.setAttribute('r', R + 3)
         glow2.setAttribute('fill', 'none')
         glow2.setAttribute('stroke', isStart ? '#22c55e' : '#f59e0b')
         glow2.setAttribute('stroke-width', '2')
@@ -1364,7 +1368,7 @@
       }
 
       // Main circle — bigger for start/end
-      const circR = isStart || isEnd ? R + 4 : R
+      const circR = isStart || isEnd ? R + 3 : R
       const circ = document.createElementNS('http://www.w3.org/2000/svg','circle')
       circ.setAttribute('cx', x); circ.setAttribute('cy', y); circ.setAttribute('r', circR)
       if (isStart) {
@@ -1385,7 +1389,7 @@
         const label   = isStart ? 'START' : 'FINISH'
         const bgColor = isStart ? '#22c55e' : '#f59e0b'
         const pw = 52, ph = 18
-        const px = x - pw / 2, py = y - circR - ph - 6
+        const px = x - pw / 2, py = y - circR - ph - 4
 
         const pill = document.createElementNS('http://www.w3.org/2000/svg','rect')
         pill.setAttribute('x', px); pill.setAttribute('y', py)
