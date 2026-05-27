@@ -1610,7 +1610,7 @@
 
     // Load green + blue tasks
     const { data: tasks } = await sb.from('tasks').select('*').eq('active', true)
-      .or('colours.cs.{"green"},colours.cs.{"blue"}')
+      .or('colours.cs.{green},colours.cs.{blue}')
     list.innerHTML = ''
 
     if (!tasks || tasks.length === 0) {
@@ -1794,12 +1794,8 @@ Currently on space ${currentSpace}`)
     const { data: p } = await sb.from('profiles').select('banked_tasks').eq('id', playerId).single()
     const banked = Array.isArray(p?.banked_tasks) ? p.banked_tasks : []
     if (banked.length === 0) { alert('No banked tasks to edit.'); return }
-    const list = banked.map((bt,i) => `${i+1}. ${bt.title}`).join('
-')
-    const input = prompt(`${name}'s banked tasks:
-${list}
-
-Enter number to remove (or cancel):`)
+    const list = banked.map((bt,i) => `${i+1}. ${bt.title}`).join('\n')
+    const input = prompt(`${name}'s banked tasks:\n${list}\n\nEnter number to remove (or cancel):`)
     if (!input) return
     const idx = parseInt(input) - 1
     if (isNaN(idx) || idx < 0 || idx >= banked.length) { alert('Invalid selection.'); return }
@@ -1954,8 +1950,7 @@ Enter number to remove (or cancel):`)
 
   async function adminAddEmps() {
     const raw = document.getElementById('new-emp-nums').value
-    const nums = raw.split(/[
-,]+/).map(s => s.trim()).filter(Boolean)
+    const nums = raw.split(/[\n,]+/).map(s => s.trim()).filter(Boolean)
     if (nums.length === 0) { setAlert('emp-add-alert','Please enter at least one number.'); return }
     const rows = nums.map(n => ({ employee_number: n, is_used: false }))
     const { error } = await sb.from('employee_numbers').insert(rows)
