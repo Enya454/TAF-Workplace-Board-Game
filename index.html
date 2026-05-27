@@ -2432,6 +2432,10 @@
     const newSpace    = isLastSpace ? 1 : mySpace + 1
     const newLaps     = (currentProfile.laps_completed || 0) + (isLastSpace ? 1 : 0)
 
+    // Animate BEFORE updating DB — player still on old space in board render
+    await animatePlayerMove(mySpace, newSpace)
+
+    // Now update DB
     await sb.from('profiles').update({
       current_space: newSpace, laps_completed: newLaps, space_tasks_completed: 0
     }).eq('id', effectiveId())
@@ -2440,17 +2444,19 @@
     currentProfile.laps_completed        = newLaps
     currentProfile.space_tasks_completed = 0
 
-    // Update allPlayers local cache using effectiveId (works for possessed players too)
     const idx = allPlayers.findIndex(p => p.id === effectiveId())
     if (idx > -1) { allPlayers[idx].current_space = newSpace; allPlayers[idx].laps_completed = newLaps }
 
     if (isLastSpace) showCelebration(newLaps)
 
     renderPlayerBadge()
-    // Refresh all players from DB so board shows everyone's real position
     await refreshPlayers()
     renderSpaceBanner()
     await renderTaskPanel()
+
+    // Settle camera on new space
+    boardFocusPosition(newSpace - 1, true, 3)
+    document.getElementById('board-nav-label').textContent = `Space ${newSpace}`
   }
 
   async function useSkipTicket() {
