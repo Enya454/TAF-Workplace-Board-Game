@@ -782,7 +782,7 @@
 
     /* Floating player card — top left, only on board tab */
     .mobile-player-card {
-      display: none;
+      display: none; /* shown only on board tab via JS */
       position: fixed; top: calc(50px + env(safe-area-inset-top, 0px)); left: 10px;
       z-index: 195;
       background: rgba(22,22,22,0.92);
@@ -831,7 +831,7 @@
       .board-viewport { height: 100% !important; }
 
       /* Mobile UI elements */
-      .mobile-player-card { display: block !important; }
+      /* mobile-player-card visibility controlled by mobNav() JS */
       .mob-tab-bar { display: flex !important; }
       .mobile-sheet { display: none !important; }
       /* Account for tab bar height */
@@ -1506,7 +1506,7 @@
 
     // Floating player card only on board tab
     const card = document.getElementById('mobile-player-card')
-    if (card) card.style.display = tab === 'board' ? 'block' : 'none'
+    if (card) card.style.display = tab === 'board' ? '' : 'none'
 
     // If tasks tab — sync content
     if (tab === 'tasks') syncMobileTasks()
