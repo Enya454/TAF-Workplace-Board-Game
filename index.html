@@ -3141,7 +3141,8 @@ Currently on space ${currentSpace}`)
 
   async function adminDeleteTestAccount(playerId, name) {
     if (!confirm(`Permanently delete test account "${name}"? This cannot be undone.`)) return
-    await sb.from('profiles').delete().eq('id', playerId)
+    const { error } = await sb.from('profiles').delete().eq('id', playerId)
+    if (error) { alert(`Delete failed: ${error.message}`); return }
     adminRenderPlayers()
   }
 
