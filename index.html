@@ -868,11 +868,49 @@
     </div>
     <div class="form">
       <div class="field"><label>Email</label><input type="email" id="login-email" placeholder="your@email.com" /></div>
-      <div class="field"><label>Password</label><input type="password" id="login-password" placeholder="••••••••" /></div>
+      <div class="field">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;">
+          <label>Password</label>
+          <a onclick="showPage('forgot')" style="font-size:0.75rem;color:var(--grey-light);cursor:pointer;">Forgot password?</a>
+        </div>
+        <input type="password" id="login-password" placeholder="••••••••" />
+      </div>
       <div id="login-alert"></div>
       <button class="btn btn-red btn-full" id="login-btn" onclick="handleLogin()">Sign In</button>
     </div>
     <p class="switch-link">No account? <a onclick="showPage('signup')">Sign up with your staff number</a></p>
+  </div>
+</div>
+
+<!-- ══ FORGOT PASSWORD ══ -->
+<div class="page auth-page" id="page-forgot">
+  <div class="auth-card">
+    <div class="logo-wrap">
+      <div class="logo-mark">AF</div>
+      <h1>Reset Password</h1><p>We'll send you a reset link</p>
+    </div>
+    <div class="form">
+      <div class="field"><label>Email</label><input type="email" id="forgot-email" placeholder="your@email.com" /></div>
+      <div id="forgot-alert"></div>
+      <button class="btn btn-red btn-full" id="forgot-btn" onclick="handleForgot()">Send Reset Link</button>
+    </div>
+    <p class="switch-link"><a onclick="showPage('login')">← Back to sign in</a></p>
+  </div>
+</div>
+
+<!-- ══ RESET PASSWORD ══ -->
+<div class="page auth-page" id="page-reset">
+  <div class="auth-card">
+    <div class="logo-wrap">
+      <div class="logo-mark">AF</div>
+      <h1>New Password</h1><p>Choose a strong password</p>
+    </div>
+    <div class="form">
+      <div class="field"><label>New Password</label><input type="password" id="reset-password" placeholder="••••••••" /></div>
+      <div class="field"><label>Confirm Password</label><input type="password" id="reset-confirm" placeholder="••••••••" /></div>
+      <div id="reset-alert"></div>
+      <button class="btn btn-red btn-full" id="reset-btn" onclick="handleReset()">Update Password</button>
+    </div>
   </div>
 </div>
 
@@ -968,6 +1006,11 @@
         <div class="task-panel-body" id="task-panel-body">
           <div class="tasks-empty">Loading tasks...</div>
         </div>
+      </div>
+
+      <!-- Change password link -->
+      <div style="padding:0.5rem 1rem;border-top:1px solid rgba(255,255,255,0.06);">
+        <a onclick="showChangePasswordModal()" style="font-size:0.72rem;color:var(--grey);cursor:pointer;letter-spacing:0.05em;text-transform:uppercase;font-weight:600;">🔑 Change Password</a>
       </div>
 
       <!-- Advance / skip -->
@@ -1366,6 +1409,71 @@
     if (realtimeChannel) { sb.removeChannel(realtimeChannel); realtimeChannel = null }
     currentUser = null; currentProfile = null; boardSpaces = []; allPlayers = []
     await sb.auth.signOut()
+  }
+
+  // ── Forgot password ──
+  async function handleForgot() {
+    const email = document.getElementById('forgot-email').value.trim()
+    if (!email) { setAlert('forgot-alert','Please enter your email.'); return }
+    setLoading('forgot-btn', true, 'Send Reset Link')
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.href
+    })
+    setLoading('forgot-btn', false, 'Send Reset Link')
+    if (error) { setAlert('forgot-alert', error.message); return }
+    setAlert('forgot-alert', '✓ Reset link sent! Check your email.', 'success')
+    document.getElementById('forgot-email').value = ''
+  }
+
+  // ── Reset password (after clicking email link) ──
+  async function handleReset() {
+    const pass    = document.getElementById('reset-password').value
+    const confirm = document.getElementById('reset-confirm').value
+    if (!pass || pass.length < 6) { setAlert('reset-alert','Password must be at least 6 characters.'); return }
+    if (pass !== confirm)         { setAlert('reset-alert','Passwords do not match.'); return }
+    setLoading('reset-btn', true, 'Update Password')
+    const { error } = await sb.auth.updateUser({ password: pass })
+    setLoading('reset-btn', false, 'Update Password')
+    if (error) { setAlert('reset-alert', error.message); return }
+    setAlert('reset-alert', '✓ Password updated! Signing you in...', 'success')
+    setTimeout(() => showPage('login'), 1500)
+  }
+
+  // ── Change password (in-game modal) ──
+  function showChangePasswordModal() {
+    const existing = document.getElementById('change-pw-modal')
+    if (existing) existing.remove()
+    const overlay = document.createElement('div')
+    overlay.id = 'change-pw-modal'
+    overlay.className = 'modal-overlay'
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:400px;">
+        <div class="modal-header">
+          <div class="modal-title">🔑 Change Password</div>
+          <button class="modal-close" onclick="document.getElementById('change-pw-modal').remove()">✕</button>
+        </div>
+        <div style="padding:1rem;display:flex;flex-direction:column;gap:0.75rem;">
+          <div class="field"><label>New Password</label><input type="password" id="cpw-new" class="admin-input" placeholder="At least 6 characters" style="width:100%;" /></div>
+          <div class="field"><label>Confirm Password</label><input type="password" id="cpw-confirm" class="admin-input" placeholder="Repeat password" style="width:100%;" /></div>
+          <div id="cpw-alert"></div>
+          <button class="btn btn-red" id="cpw-btn" onclick="saveNewPassword()">Update Password</button>
+        </div>
+      </div>`
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove() })
+    document.body.appendChild(overlay)
+  }
+
+  async function saveNewPassword() {
+    const pass    = document.getElementById('cpw-new').value
+    const confirm = document.getElementById('cpw-confirm').value
+    if (!pass || pass.length < 6) { setAlert('cpw-alert','At least 6 characters required.'); return }
+    if (pass !== confirm)         { setAlert('cpw-alert','Passwords do not match.'); return }
+    setLoading('cpw-btn', true, 'Update Password')
+    const { error } = await sb.auth.updateUser({ password: pass })
+    setLoading('cpw-btn', false, 'Update Password')
+    if (error) { setAlert('cpw-alert', error.message); return }
+    setAlert('cpw-alert', '✓ Password updated!', 'success')
+    setTimeout(() => document.getElementById('change-pw-modal')?.remove(), 1200)
   }
 
   // ════════════════════════════════
@@ -2567,19 +2675,20 @@
     setLoading('avatar-save-btn', true, 'Save Avatar')
     setAlert('avatar-upload-alert','')
 
-    // Determine extension from mime type (handles webp, jpg, png, gif)
+    // Use effectiveId so possessed player gets their own file, not the admin's
+    const targetId = effectiveId()
     const mimeToExt = {
       'image/jpeg': 'jpg', 'image/jpg': 'jpg', 'image/png': 'png',
       'image/gif': 'gif', 'image/webp': 'webp'
     }
     const ext      = mimeToExt[avatarFileBlob.type] || 'jpg'
-    const filePath = `${currentUser.id}.${ext}`
+    const filePath = `${targetId}.${ext}`
 
-    // Remove any existing avatar file first (different extension may exist)
+    // Remove any existing avatar file for this profile
     await sb.storage.from('avatars').remove([
-      `${currentUser.id}.jpg`, `${currentUser.id}.jpeg`,
-      `${currentUser.id}.png`, `${currentUser.id}.gif`,
-      `${currentUser.id}.webp`
+      `${targetId}.jpg`, `${targetId}.jpeg`,
+      `${targetId}.png`, `${targetId}.gif`,
+      `${targetId}.webp`
     ])
 
     const { data: upData, error: upErr } = await sb.storage
@@ -2597,8 +2706,8 @@
     const { data: urlData } = sb.storage.from('avatars').getPublicUrl(filePath)
     const publicUrl = urlData.publicUrl + '?t=' + Date.now()
 
-    // Save URL to profile
-    const { error: dbErr } = await sb.from('profiles').update({ avatar: publicUrl }).eq('id', effectiveId())
+    // Save URL to the correct profile
+    const { error: dbErr } = await sb.from('profiles').update({ avatar: publicUrl }).eq('id', targetId)
     if (dbErr) {
       setAlert('avatar-upload-alert', `Save failed: ${dbErr.message}`)
       setLoading('avatar-save-btn', false, 'Save Avatar')
@@ -2606,7 +2715,7 @@
     }
 
     currentProfile.avatar = publicUrl
-    const idx = allPlayers.findIndex(p => p.id === currentUser.id)
+    const idx = allPlayers.findIndex(p => p.id === targetId)
     if (idx > -1) allPlayers[idx].avatar = publicUrl
 
     renderNav()
