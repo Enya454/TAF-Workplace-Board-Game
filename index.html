@@ -1058,11 +1058,6 @@
         </div>
       </div>
 
-      <!-- Change password link -->
-      <div style="padding:0.5rem 1rem;border-top:1px solid rgba(255,255,255,0.06);">
-        <a onclick="showChangePasswordModal()" style="font-size:0.72rem;color:var(--grey);cursor:pointer;letter-spacing:0.05em;text-transform:uppercase;font-weight:600;">🔑 Change Password</a>
-      </div>
-
       <!-- Advance / skip -->
       <div class="advance-wrap">
         <button class="btn-advance" id="btn-advance" onclick="advanceSpace()" disabled>
@@ -1275,12 +1270,15 @@
 <!-- ══ AVATAR MODAL ══ -->
 <div id="avatar-modal" style="display:none;">
   <div class="modal-overlay" onclick="closeModalOverlay(event,'avatar-modal')">
-    <div class="modal">
+    <div class="modal" style="max-width:420px;">
       <div class="modal-header">
-        <div class="modal-title">Change Avatar</div>
+        <div class="modal-title">⚙️ My Profile</div>
         <button class="modal-close" onclick="closeModal('avatar-modal')">✕</button>
       </div>
       <div class="modal-body">
+
+        <!-- Avatar section -->
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:0.78rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--grey-light);margin-bottom:0.5rem;">Profile Photo</div>
         <div class="avatar-preview-wrap">
           <img id="avatar-preview" class="avatar-preview" src="" alt="Preview" />
         </div>
@@ -1291,7 +1289,32 @@
           <small>JPG, PNG, GIF or WebP · max 2MB</small>
         </div>
         <div id="avatar-upload-alert"></div>
-        <button class="btn btn-red btn-full" id="avatar-save-btn" onclick="saveAvatar()" disabled>Save Avatar</button>
+        <button class="btn btn-red btn-full" id="avatar-save-btn" onclick="saveAvatar()" disabled>Save Photo</button>
+
+        <div style="border-top:1px solid rgba(255,255,255,0.07);margin:1rem 0;"></div>
+
+        <!-- Store tags section -->
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:0.78rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--grey-light);margin-bottom:0.5rem;">Store Tags</div>
+        <div id="profile-tag-picker" style="display:flex;flex-wrap:wrap;gap:0.4rem;min-height:32px;">
+          <span style="font-size:0.78rem;color:var(--grey);">Loading tags...</span>
+        </div>
+
+        <div style="border-top:1px solid rgba(255,255,255,0.07);margin:1rem 0;"></div>
+
+        <!-- Change password section -->
+        <div style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:0.78rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--grey-light);margin-bottom:0.5rem;">Change Password</div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+          <input type="password" id="cpw-new"     class="admin-input" placeholder="New password (min 6 chars)" style="width:100%;" />
+          <input type="password" id="cpw-confirm" class="admin-input" placeholder="Confirm new password"       style="width:100%;" />
+          <div id="cpw-alert"></div>
+          <button class="btn btn-ghost btn-full btn-sm" id="cpw-btn" onclick="saveNewPassword()">Update Password</button>
+        </div>
+
+        <div style="border-top:1px solid rgba(255,255,255,0.07);margin:1rem 0;"></div>
+
+        <p style="font-size:0.72rem;color:var(--grey);text-align:center;">
+          Your avatar and tags are visible to all players on the board.
+        </p>
       </div>
     </div>
   </div>
@@ -2163,13 +2186,17 @@
   function getFilteredPlayers() {
     if (activeFilter === 'all') return allPlayers
     if (activeFilter === 'friends') {
+      // Always include yourself
       return allPlayers.filter(p => p.id === currentUser.id || myFriends.has(p.id))
     }
-    // tag filter — players who have this tag
+    // Tag filter
     const tagId = parseInt(activeFilter)
-    return allPlayers.filter(p =>
-      p.id === currentUser.id || (p._tagIds && p._tagIds.has(tagId))
-    )
+    if (!isNaN(tagId)) {
+      return allPlayers.filter(p =>
+        p.id === currentUser.id || (p._tagIds && p._tagIds.has(tagId))
+      )
+    }
+    return allPlayers
   }
 
   function renderFilterBar() {
@@ -2189,6 +2216,26 @@
   // ════════════════════════════════
   //  TAGS
   // ════════════════════════════════
+  function renderProfileTagPicker() {
+    const wrap = document.getElementById('profile-tag-picker')
+    if (!wrap) return
+    if (allTags.length === 0) {
+      wrap.innerHTML = '<span style="font-size:0.78rem;color:var(--grey);">No tags created yet — ask an admin.</span>'
+      return
+    }
+    wrap.innerHTML = allTags.map(t => {
+      const on  = myTagIds.has(t.id)
+      const hex = t.colour || '#6366f1'
+      return `<div class="tag-pill clickable" id="tagpick-${t.id}"
+        onclick="toggleMyTag(${t.id},'${hex}')"
+        style="background:${on ? hex+'22' : 'transparent'};
+               border-color:${on ? hex : hex+'55'};
+               color:${on ? hex : 'var(--grey-light)'};">
+        <div class="tag-dot" style="background:${hex}"></div>${t.name}
+      </div>`
+    }).join('')
+  }
+
   async function openTagModal() {
     await loadAllTags()
     await loadMyTags()
@@ -2250,6 +2297,11 @@
     // Refresh profile tags on board
     await loadPlayerTags()
     renderSidePanel()
+    renderFilterBar()
+    // If profile modal is open, re-render its tag picker too
+    if (document.getElementById('avatar-modal')?.style.display !== 'none') {
+      renderProfileTagPicker()
+    }
   }
 
   // Load tags for all players (for tag filtering)
