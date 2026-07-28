@@ -745,6 +745,56 @@
     }
     .tooltip-av img { width: 100%; height: 100%; object-fit: cover; }
 
+    /* ── Tags ── */
+    .tag-pill {
+      display:inline-flex; align-items:center; gap:0.3rem;
+      padding:0.18rem 0.55rem; border-radius:99px; font-size:0.65rem;
+      font-family:'Barlow Condensed',sans-serif; font-weight:700;
+      letter-spacing:0.05em; text-transform:uppercase;
+      border:1.5px solid; white-space:nowrap; cursor:default;
+    }
+    .tag-pill.clickable { cursor:pointer; transition:filter 0.15s; }
+    .tag-pill.clickable:hover { filter:brightness(1.25); }
+    .tag-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }
+
+    /* Friend button */
+    .btn-follow {
+      border:none; border-radius:6px; font-family:'Barlow Condensed',sans-serif;
+      font-weight:700; font-size:0.65rem; letter-spacing:0.04em; text-transform:uppercase;
+      padding:0.22rem 0.55rem; cursor:pointer; transition:background 0.15s, color 0.15s;
+      white-space:nowrap; flex-shrink:0;
+    }
+    .btn-follow.following {
+      background:rgba(34,197,94,0.12); color:var(--green);
+      border:1px solid rgba(34,197,94,0.3);
+    }
+    .btn-follow.not-following {
+      background:rgba(255,255,255,0.07); color:var(--grey-light);
+      border:1px solid rgba(255,255,255,0.12);
+    }
+    .btn-follow.not-following:hover { background:rgba(255,255,255,0.13); color:#fff; }
+
+    /* Filter bar */
+    .board-filter-bar {
+      display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;
+      padding:0.35rem 0.75rem; background:var(--dark-2);
+      border-bottom:1px solid rgba(255,255,255,0.06); flex-shrink:0;
+    }
+    .filter-chip {
+      display:inline-flex; align-items:center; gap:0.3rem;
+      background:var(--dark-3); border:1px solid rgba(255,255,255,0.1);
+      border-radius:99px; padding:0.22rem 0.6rem; cursor:pointer;
+      font-family:'Barlow Condensed',sans-serif; font-weight:700;
+      font-size:0.7rem; letter-spacing:0.04em; text-transform:uppercase;
+      color:var(--grey-light); transition:all 0.15s; white-space:nowrap;
+    }
+    .filter-chip:hover { border-color:rgba(255,255,255,0.2); color:#fff; }
+    .filter-chip.active { background:rgba(232,17,45,0.15); border-color:rgba(232,17,45,0.4); color:var(--red); }
+    .filter-chip .filter-count {
+      background:rgba(255,255,255,0.1); border-radius:99px;
+      padding:0 5px; font-size:0.6rem;
+    }
+
     /* ══════════════════════════════
        MOBILE GAME UI — bottom tab system
     ══════════════════════════════ */
@@ -1045,6 +1095,14 @@
         </div>
       </div>
 
+      <!-- Filter bar -->
+      <div class="board-filter-bar" id="board-filter-bar">
+        <span style="font-size:0.65rem;color:var(--grey);letter-spacing:0.06em;text-transform:uppercase;font-weight:700;">Show:</span>
+        <div class="filter-chip active" id="filter-all" onclick="setPlayerFilter('all')">👥 All</div>
+        <div class="filter-chip" id="filter-friends" onclick="setPlayerFilter('friends')">⭐ Friends</div>
+        <div id="filter-tags-wrap" style="display:flex;gap:0.35rem;flex-wrap:wrap;"></div>
+      </div>
+
       <!-- Zoomable/pannable board viewport — SVG fills it, viewBox controls zoom/pan -->
       <div class="board-viewport" id="board-viewport">
         <svg id="board-svg" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;"></svg>
@@ -1145,6 +1203,9 @@
     <div class="admin-nav-item" onclick="adminNav('auditlog')" id="anav-auditlog">
       <span class="admin-nav-icon">🔍</span> Audit Log
     </div>
+    <div class="admin-nav-item" onclick="adminNav('tags')" id="anav-tags">
+      <span class="admin-nav-icon">🏷</span> Tags
+    </div>
     <div class="admin-sidebar-bottom">
       <button class="btn btn-blue btn-full btn-sm" onclick="enterStaffView()">👟 Staff View</button>
       <button class="btn btn-ghost btn-full btn-sm" id="board-toggle-btn" onclick="toggleAdminOnBoard()">🎲 Show on Board: Off</button>
@@ -1185,6 +1246,9 @@
     </div>
     <div class="admin-tab" onclick="adminNav('auditlog')" id="atab-auditlog">
       <span>🔍</span><span>Audit</span>
+    </div>
+    <div class="admin-tab" onclick="adminNav('tags')" id="atab-tags">
+      <span>🏷</span><span>Tags</span>
     </div>
     <div class="admin-tab" onclick="adminMobileMore()" id="atab-more">
       <span>⋯</span><span>More</span>
@@ -1288,6 +1352,10 @@
   let currentTasks      = []
   let avatarFileBlob    = null
   let possessedPlayerId = null
+  let myFriends         = new Set()  // set of profile IDs I follow
+  let allTags           = []         // [{id,name,colour}]
+  let myTagIds          = new Set()  // tag IDs on my profile
+  let activeFilter      = 'all'      // 'all' | 'friends' | tag id
 
   // ── Board camera state ──
   let boardPositions  = []    // [{x,y}] pixel positions for each space
@@ -1495,16 +1563,39 @@
       p.role === 'staff' || (p.role === 'supervisor' && p.appear_on_board !== false) || (p.role === 'admin' && p.appear_on_board)
     )
 
+    // Load friends and tags in parallel
+    await Promise.all([loadMyFriends(), loadAllTags(), loadMyTags(), loadPlayerTags()])
+
     renderNav()
     renderPlayerBadge()
     renderBoard()
     renderSidePanel()
     renderSpaceBanner()
     await renderTaskPanel()
+    renderFilterBar()
     setTimeout(initBoardPan, 100)
     initRealtimeBoard()
     updateMobAdminTab()
     mobNav('board')
+  }
+
+  async function loadMyFriends() {
+    const { data } = await sb.from('friendships')
+      .select('following_id')
+      .eq('follower_id', currentUser.id)
+    myFriends = new Set((data||[]).map(r => r.following_id))
+  }
+
+  async function loadAllTags() {
+    const { data } = await sb.from('tags').select('*').order('name')
+    allTags = data || []
+  }
+
+  async function loadMyTags() {
+    const { data } = await sb.from('profile_tags')
+      .select('tag_id')
+      .eq('profile_id', effectiveId())
+    myTagIds = new Set((data||[]).map(r => r.tag_id))
   }
 
   // Refresh allPlayers from DB and re-render board + panel
@@ -1513,6 +1604,7 @@
     allPlayers = (data || []).filter(p =>
       p.role === 'staff' || (p.role === 'supervisor' && p.appear_on_board !== false) || (p.role === 'admin' && p.appear_on_board)
     )
+    await loadPlayerTags()
     renderBoard()
     renderSidePanel()
   }
@@ -2028,6 +2120,217 @@
 
     // Clean up
     animG.remove(); clip.remove()
+  }
+
+  // ════════════════════════════════
+  //  FRIENDS
+  // ════════════════════════════════
+  async function toggleFollow(profileId) {
+    if (profileId === currentUser.id) return
+    if (myFriends.has(profileId)) {
+      await sb.from('friendships').delete()
+        .eq('follower_id', currentUser.id)
+        .eq('following_id', profileId)
+      myFriends.delete(profileId)
+    } else {
+      await sb.from('friendships').insert({
+        follower_id: currentUser.id, following_id: profileId
+      })
+      myFriends.add(profileId)
+    }
+    renderSidePanel()
+    syncMobilePlayers()
+    if (activeFilter === 'friends') { renderBoard(); renderSidePanel() }
+  }
+
+  // ════════════════════════════════
+  //  FILTERS
+  // ════════════════════════════════
+  function setPlayerFilter(val) {
+    activeFilter = val
+    // Update chips
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'))
+    if (val === 'all')     document.getElementById('filter-all')?.classList.add('active')
+    if (val === 'friends') document.getElementById('filter-friends')?.classList.add('active')
+    if (typeof val === 'number' || (typeof val === 'string' && !isNaN(val))) {
+      document.getElementById('filter-tag-' + val)?.classList.add('active')
+    }
+    renderBoard()
+    renderSidePanel()
+    syncMobilePlayers()
+  }
+
+  function getFilteredPlayers() {
+    if (activeFilter === 'all') return allPlayers
+    if (activeFilter === 'friends') {
+      return allPlayers.filter(p => p.id === currentUser.id || myFriends.has(p.id))
+    }
+    // tag filter — players who have this tag
+    const tagId = parseInt(activeFilter)
+    return allPlayers.filter(p =>
+      p.id === currentUser.id || (p._tagIds && p._tagIds.has(tagId))
+    )
+  }
+
+  function renderFilterBar() {
+    const wrap = document.getElementById('filter-tags-wrap')
+    if (!wrap) return
+    wrap.innerHTML = allTags.map(t => {
+      const hex  = t.colour || '#6366f1'
+      const rgba = hex + '22'
+      return `<div class="filter-chip" id="filter-tag-${t.id}"
+        onclick="setPlayerFilter('${t.id}')"
+        style="border-color:${hex}55; ${activeFilter == t.id ? `background:${rgba};color:${hex};border-color:${hex};` : ''}">
+        <div class="tag-dot" style="background:${hex}"></div>${t.name}
+      </div>`
+    }).join('')
+  }
+
+  // ════════════════════════════════
+  //  TAGS
+  // ════════════════════════════════
+  async function openTagModal() {
+    await loadAllTags()
+    await loadMyTags()
+    const existing = document.getElementById('tag-modal')
+    if (existing) existing.remove()
+    const overlay = document.createElement('div')
+    overlay.id = 'tag-modal'
+    overlay.className = 'modal-overlay'
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:420px;">
+        <div class="modal-header">
+          <div class="modal-title">🏷 My Store Tags</div>
+          <button class="modal-close" onclick="document.getElementById('tag-modal').remove()">✕</button>
+        </div>
+        <div style="padding:1rem;display:flex;flex-direction:column;gap:0.75rem;">
+          <p style="font-size:0.82rem;color:var(--grey-light);">Select which stores or groups you belong to.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:0.5rem;" id="tag-picker">
+            ${allTags.length === 0
+              ? '<p style="color:var(--grey);font-size:0.8rem;">No tags created yet. Ask an admin to create store tags.</p>'
+              : allTags.map(t => {
+                  const on  = myTagIds.has(t.id)
+                  const hex = t.colour || '#6366f1'
+                  return `<div class="tag-pill clickable" id="tagpick-${t.id}"
+                    onclick="toggleMyTag(${t.id},'${hex}')"
+                    style="background:${on ? hex+'22' : 'transparent'};
+                           border-color:${on ? hex : hex+'55'};
+                           color:${on ? hex : 'var(--grey-light)'};">
+                    <div class="tag-dot" style="background:${hex}"></div>${t.name}
+                  </div>`
+                }).join('')
+            }
+          </div>
+        </div>
+      </div>`
+    overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove() })
+    document.body.appendChild(overlay)
+  }
+
+  async function toggleMyTag(tagId, hex) {
+    const el = document.getElementById('tagpick-' + tagId)
+    if (myTagIds.has(tagId)) {
+      await sb.from('profile_tags').delete()
+        .eq('profile_id', effectiveId()).eq('tag_id', tagId)
+      myTagIds.delete(tagId)
+      if (el) {
+        el.style.background = 'transparent'
+        el.style.borderColor = hex + '55'
+        el.style.color = 'var(--grey-light)'
+      }
+    } else {
+      await sb.from('profile_tags').insert({ profile_id: effectiveId(), tag_id: tagId })
+      myTagIds.add(tagId)
+      if (el) {
+        el.style.background = hex + '22'
+        el.style.borderColor = hex
+        el.style.color = hex
+      }
+    }
+    // Refresh profile tags on board
+    await loadPlayerTags()
+    renderSidePanel()
+  }
+
+  // Load tags for all players (for tag filtering)
+  async function loadPlayerTags() {
+    const { data } = await sb.from('profile_tags').select('profile_id, tag_id')
+    // Build map: profile_id -> Set of tag_ids
+    const map = {}
+    ;(data||[]).forEach(r => {
+      if (!map[r.profile_id]) map[r.profile_id] = new Set()
+      map[r.profile_id].add(r.tag_id)
+    })
+    allPlayers.forEach(p => { p._tagIds = map[p.id] || new Set() })
+  }
+
+  // Admin tag management
+  async function adminRenderTags() {
+    const { data: tags } = await sb.from('tags').select('*').order('name')
+    const el = document.getElementById('admin-content')
+    const rows = (tags||[]).map(t => `
+      <tr>
+        <td><div style="display:flex;align-items:center;gap:0.5rem;">
+          <div style="width:14px;height:14px;border-radius:50%;background:${t.colour};flex-shrink:0;"></div>
+          <strong>${t.name}</strong>
+        </div></td>
+        <td><input type="color" value="${t.colour}" onchange="adminUpdateTagColour(${t.id},this.value)"
+          style="width:36px;height:24px;border:none;background:none;cursor:pointer;padding:0;"></td>
+        <td><button class="btn-xs btn-xs-red" onclick="adminDeleteTag(${t.id},'${t.name.replace(/'/g,"\'")}')">Delete</button></td>
+      </tr>`).join('')
+    el.innerHTML = `
+      <div class="admin-section">
+        <div class="admin-section-header"><div class="admin-section-title">Store & Group Tags</div></div>
+        <div class="admin-section-body">
+          <p style="font-size:0.82rem;color:var(--grey-light);">Create tags for stores or groups. Players choose their own tags from their profile.</p>
+          <div class="admin-form-row">
+            <div class="admin-field" style="flex:2;">
+              <label>Tag Name</label>
+              <input class="admin-input" id="new-tag-name" placeholder="e.g. Sydney CBD, Online Team" />
+            </div>
+            <div class="admin-field">
+              <label>Colour</label>
+              <input type="color" id="new-tag-colour" value="#6366f1"
+                style="width:48px;height:38px;border:none;border-radius:8px;cursor:pointer;background:none;padding:2px;">
+            </div>
+            <button class="btn btn-red" style="align-self:flex-end;" onclick="adminCreateTag()">+ Add Tag</button>
+          </div>
+          <div id="tag-create-alert"></div>
+        </div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-header"><div class="admin-section-title">Existing Tags (${(tags||[]).length})</div></div>
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead><tr><th>Name</th><th>Colour</th><th>Actions</th></tr></thead>
+            <tbody>${rows || '<tr><td colspan="3" style="text-align:center;color:var(--grey);padding:2rem;">No tags yet</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>`
+  }
+
+  async function adminCreateTag() {
+    const name   = document.getElementById('new-tag-name').value.trim()
+    const colour = document.getElementById('new-tag-colour').value
+    if (!name) { setAlert('tag-create-alert','Please enter a tag name.'); return }
+    const { error } = await sb.from('tags').insert({ name, colour })
+    if (error) { setAlert('tag-create-alert', error.message); return }
+    await adminLog(`Created tag: "${name}"`)
+    document.getElementById('new-tag-name').value = ''
+    setAlert('tag-create-alert', `✓ Tag "${name}" created.`, 'success')
+    adminRenderTags()
+  }
+
+  async function adminUpdateTagColour(id, colour) {
+    await sb.from('tags').update({ colour }).eq('id', id)
+    adminRenderTags()
+  }
+
+  async function adminDeleteTag(id, name) {
+    if (!confirm(`Delete tag "${name}"? It will be removed from all players.`)) return
+    await sb.from('tags').delete().eq('id', id)
+    await adminLog(`Deleted tag: "${name}"`)
+    adminRenderTags()
   }
 
   // ════════════════════════════════
@@ -3027,11 +3330,11 @@
     const tabEl = document.getElementById('atab-' + section)
     if (tabEl) tabEl.classList.add('active')
 
-    const titles = { players:'Players', tasks:'Tasks', employees:'Employee Numbers', board:'Board Config', shape:'Board Shape Editor', history:'Task History', auditlog:'Audit Log' }
+    const titles = { players:'Players', tasks:'Tasks', employees:'Employee Numbers', board:'Board Config', shape:'Board Shape Editor', history:'Task History', auditlog:'Audit Log', tags:'Tags' }
     document.getElementById('admin-section-title').textContent = titles[section] || section
     const content = document.getElementById('admin-content')
     content.innerHTML = '<div style="color:var(--grey);text-align:center;padding:3rem;"><span class="spinner" style="width:28px;height:28px;border-width:3px;"></span></div>'
-    const fns = { players: adminRenderPlayers, tasks: adminRenderTasks, employees: adminRenderEmployees, board: adminRenderBoard, shape: adminRenderShape, history: adminRenderHistory, auditlog: adminRenderAuditLog }
+    const fns = { players: adminRenderPlayers, tasks: adminRenderTasks, employees: adminRenderEmployees, board: adminRenderBoard, shape: adminRenderShape, history: adminRenderHistory, auditlog: adminRenderAuditLog, tags: adminRenderTags }
     if (fns[section]) fns[section]()
   }
 
