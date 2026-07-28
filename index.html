@@ -1765,7 +1765,7 @@
     const list = document.getElementById('mob-players-list')
     if (!list) return
     list.innerHTML = ''
-    const sorted = [...allPlayers].sort((a,b) => (b.laps_completed||0) - (a.laps_completed||0) || (a.current_space||1) - (b.current_space||1))
+    const sorted = [...getFilteredPlayers()].sort((a,b) => (b.laps_completed||0) - (a.laps_completed||0) || (a.current_space||1) - (b.current_space||1))
     sorted.forEach((p, rank) => {
       const sc    = boardSpaces.find(sp => sp.position === (p.current_space||1))?.colour || 'green'
       const isMe  = p.id === currentProfile.id
@@ -2170,14 +2170,13 @@
   //  FILTERS
   // ════════════════════════════════
   function setPlayerFilter(val) {
-    activeFilter = val
-    // Update chips
+    activeFilter = String(val)
+    // Update chip highlight
     document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'))
     if (val === 'all')     document.getElementById('filter-all')?.classList.add('active')
-    if (val === 'friends') document.getElementById('filter-friends')?.classList.add('active')
-    if (typeof val === 'number' || (typeof val === 'string' && !isNaN(val))) {
-      document.getElementById('filter-tag-' + val)?.classList.add('active')
-    }
+    else if (val === 'friends') document.getElementById('filter-friends')?.classList.add('active')
+    else document.getElementById('filter-tag-' + val)?.classList.add('active')
+    // Re-render — board preserves camera since boardInitialRender is false
     renderBoard()
     renderSidePanel()
     syncMobilePlayers()
@@ -2186,15 +2185,17 @@
   function getFilteredPlayers() {
     if (activeFilter === 'all') return allPlayers
     if (activeFilter === 'friends') {
-      // Always include yourself
       return allPlayers.filter(p => p.id === currentUser.id || myFriends.has(p.id))
     }
-    // Tag filter
+    // Tag filter — _tagIds stores numeric IDs (BigInt from Supabase comes as number)
     const tagId = parseInt(activeFilter)
     if (!isNaN(tagId)) {
-      return allPlayers.filter(p =>
-        p.id === currentUser.id || (p._tagIds && p._tagIds.has(tagId))
-      )
+      return allPlayers.filter(p => {
+        if (p.id === currentUser.id) return true
+        if (!p._tagIds) return false
+        // Check both number and string versions since Supabase may return either
+        return p._tagIds.has(tagId) || p._tagIds.has(String(tagId))
+      })
     }
     return allPlayers
   }
@@ -2307,11 +2308,10 @@
   // Load tags for all players (for tag filtering)
   async function loadPlayerTags() {
     const { data } = await sb.from('profile_tags').select('profile_id, tag_id')
-    // Build map: profile_id -> Set of tag_ids
     const map = {}
     ;(data||[]).forEach(r => {
       if (!map[r.profile_id]) map[r.profile_id] = new Set()
-      map[r.profile_id].add(r.tag_id)
+      map[r.profile_id].add(Number(r.tag_id))  // always store as number
     })
     allPlayers.forEach(p => { p._tagIds = map[p.id] || new Set() })
   }
@@ -2974,7 +2974,7 @@
   function renderSidePanel() {
     const list = document.getElementById('players-list')
     list.innerHTML = ''
-    allPlayers.forEach(p => {
+    getFilteredPlayers().forEach(p => {
       const sc   = boardSpaces.find(sp => sp.position === p.current_space)?.colour || 'green'
       const isMe = p.id === currentProfile.id
       const row  = document.createElement('div')
