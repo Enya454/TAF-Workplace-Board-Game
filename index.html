@@ -1610,15 +1610,16 @@
   }
 
   async function loadAllTags() {
-    const { data } = await sb.from('tags').select('*').order('name')
+    const { data, error } = await sb.from('tags').select('*').order('name')
+    if (error) console.error('loadAllTags error:', error)
     allTags = data || []
   }
 
   async function loadMyTags() {
     const { data } = await sb.from('profile_tags')
       .select('tag_id')
-      .eq('profile_id', effectiveId())
-    myTagIds = new Set((data||[]).map(r => r.tag_id))
+      .eq('profile_id', currentUser.id)
+    myTagIds = new Set((data||[]).map(r => Number(r.tag_id)))
   }
 
   // Refresh allPlayers from DB and re-render board + panel
@@ -2149,21 +2150,23 @@
   //  FRIENDS
   // ════════════════════════════════
   async function toggleFollow(profileId) {
-    if (profileId === currentUser.id) return
+    if (!profileId || profileId === currentUser.id) return
     if (myFriends.has(profileId)) {
-      await sb.from('friendships').delete()
+      const { error } = await sb.from('friendships').delete()
         .eq('follower_id', currentUser.id)
         .eq('following_id', profileId)
+      if (error) { alert('Could not unfollow: ' + error.message); return }
       myFriends.delete(profileId)
     } else {
-      await sb.from('friendships').insert({
+      const { error } = await sb.from('friendships').insert({
         follower_id: currentUser.id, following_id: profileId
       })
+      if (error) { alert('Could not follow: ' + error.message); return }
       myFriends.add(profileId)
     }
     renderSidePanel()
     syncMobilePlayers()
-    if (activeFilter === 'friends') { renderBoard(); renderSidePanel() }
+    if (activeFilter === 'friends') renderBoard()
   }
 
   // ════════════════════════════════
@@ -2176,7 +2179,8 @@
     if (val === 'all')     document.getElementById('filter-all')?.classList.add('active')
     else if (val === 'friends') document.getElementById('filter-friends')?.classList.add('active')
     else document.getElementById('filter-tag-' + val)?.classList.add('active')
-    // Re-render — board preserves camera since boardInitialRender is false
+    const filtered = getFilteredPlayers()
+    console.log('[Filter]', val, '→', filtered.length, 'players:', filtered.map(p=>p.display_name))
     renderBoard()
     renderSidePanel()
     syncMobilePlayers()
@@ -2276,10 +2280,11 @@
   }
 
   async function toggleMyTag(tagId, hex) {
+    tagId = Number(tagId)
     const el = document.getElementById('tagpick-' + tagId)
     if (myTagIds.has(tagId)) {
       await sb.from('profile_tags').delete()
-        .eq('profile_id', effectiveId()).eq('tag_id', tagId)
+        .eq('profile_id', currentUser.id).eq('tag_id', tagId)
       myTagIds.delete(tagId)
       if (el) {
         el.style.background = 'transparent'
@@ -2287,7 +2292,7 @@
         el.style.color = 'var(--grey-light)'
       }
     } else {
-      await sb.from('profile_tags').insert({ profile_id: effectiveId(), tag_id: tagId })
+      await sb.from('profile_tags').insert({ profile_id: currentUser.id, tag_id: tagId })
       myTagIds.add(tagId)
       if (el) {
         el.style.background = hex + '22'
@@ -2307,12 +2312,14 @@
 
   // Load tags for all players (for tag filtering)
   async function loadPlayerTags() {
-    const { data } = await sb.from('profile_tags').select('profile_id, tag_id')
+    const { data, error } = await sb.from('profile_tags').select('profile_id, tag_id')
+    if (error) console.error('loadPlayerTags error:', error)
     const map = {}
     ;(data||[]).forEach(r => {
       if (!map[r.profile_id]) map[r.profile_id] = new Set()
-      map[r.profile_id].add(Number(r.tag_id))  // always store as number
+      map[r.profile_id].add(Number(r.tag_id))
     })
+    // Ensure every player has a _tagIds set (even if empty)
     allPlayers.forEach(p => { p._tagIds = map[p.id] || new Set() })
   }
 
@@ -2532,7 +2539,11 @@
     // Clean up and update local player state
     animG.remove(); clip.remove()
     const idx = allPlayers.findIndex(p => p.id === player.id)
-    if (idx > -1) allPlayers[idx] = { ...allPlayers[idx], ...player }
+    if (idx > -1) {
+      const tags = allPlayers[idx]._tagIds  // preserve tag set
+      allPlayers[idx] = { ...allPlayers[idx], ...player }
+      allPlayers[idx]._tagIds = tags
+    }
     renderBoard()
     renderSidePanel()
   }
@@ -2698,7 +2709,7 @@
       const colour    = space.colour
       const mySpace   = currentProfile.current_space || 1
       const isMine    = space.position === mySpace
-      const players   = allPlayers.filter(p => (p.current_space || 1) === space.position)
+      const players   = getFilteredPlayers().filter(p => (p.current_space || 1) === space.position)
       const fillClass = `space-${colour}-fill${isMine ? ' mine' : ''}`
 
       const isStart  = space.position === 1
