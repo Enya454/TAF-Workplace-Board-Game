@@ -3108,7 +3108,7 @@
             <div style="display:flex;flex-wrap:wrap;gap:0.35rem;">${tags}</div>
           </div>
           <button class="btn ${isFollowing?'btn-ghost':'btn-red'} btn-full" id="popup-follow-btn"
-            onclick="toggleFollow('${p.id}');updatePopupFollow('${p.id}')">
+            onclick="toggleFollow('${p.id}').then(()=>updatePopupFollow('${p.id}'))">
             ${isFollowing?'★ Following — Click to Unfollow':'☆ Follow'}
           </button>
           ${canViewHistory ? `<button class="btn btn-ghost btn-full btn-sm"
@@ -3576,7 +3576,7 @@
 
       // What actions are available depends on viewer role + target role
       const canEditTickets = editable
-      const canMoveReset   = editable && isSupervisorOrAbove()
+      const canMoveReset   = isSupervisorOrAbove()  // always allow if viewer is sup/admin
       const canPromote     = editable && isAdmin()
       const canDelete      = editable && p.is_test
 
@@ -3599,6 +3599,10 @@
           <button class="btn-xs btn-xs-blue" onclick="adminMovePlayer('${p.id}','${p.display_name}',${p.current_space||1})">Move</button>
           <button class="btn-xs btn-xs-grey" onclick="adminResetPlayer('${p.id}','${p.display_name}')">Reset</button>` : ''}
           <button class="btn-xs btn-xs-blue" onclick="adminPossessPlayer('${p.id}')">👤 Possess</button>
+          ${isAdmin() ? `
+          <button class="btn-xs btn-xs-grey" onclick="adminEditPlayerTags('${p.id}','${p.display_name.replace(/'/g,"\'")}')">🏷 Tags</button>
+          <button class="btn-xs btn-xs-grey" onclick="adminRenderHistory('${p.id}','${p.display_name.replace(/'/g,"\'")}')">📋 History</button>
+          ` : ''}
           ${canPromote ? `<button class="btn-xs btn-xs-green" onclick="adminPromotePlayer('${p.id}','${p.display_name}','${p.role}')">⬆️ Promote</button>` : ''}
           ${canDelete ? `<button class="btn-xs btn-xs-red" onclick="adminDeleteTestAccount('${p.id}','${p.display_name}')">Delete</button>` : ''}
         </td>
@@ -5086,6 +5090,65 @@ Currently on space ${currentSpace}`)
     await sb.from('saved_shapes').delete().eq('id',id)
     const {data} = await sb.from('saved_shapes').select('*').order('created_at',{ascending:false})
     renderSavedShapes(data||[])
+  }
+
+  // ── ADMIN EDIT PLAYER TAGS ──
+  async function adminEditPlayerTags(playerId, playerName) {
+    await loadAllTags()
+    // Load this player's current tags
+    const { data } = await sb.from('profile_tags').select('tag_id').eq('profile_id', playerId)
+    const playerTagIds = new Set((data||[]).map(r => Number(r.tag_id)))
+
+    const existing = document.getElementById('admin-tag-modal')
+    if (existing) existing.remove()
+
+    const overlay = document.createElement('div')
+    overlay.id = 'admin-tag-modal'
+    overlay.className = 'modal-overlay'
+    overlay.innerHTML = `
+      <div class="modal" style="max-width:400px;">
+        <div class="modal-header">
+          <div class="modal-title">🏷 Tags — ${playerName}</div>
+          <button class="modal-close" onclick="document.getElementById('admin-tag-modal').remove()">✕</button>
+        </div>
+        <div style="padding:1rem;display:flex;flex-direction:column;gap:0.75rem;">
+          ${allTags.length === 0
+            ? '<p style="color:var(--grey);font-size:0.82rem;">No tags created yet. Create tags in the Tags section.</p>'
+            : `<p style="font-size:0.82rem;color:var(--grey-light);">Toggle tags for this player:</p>
+               <div style="display:flex;flex-wrap:wrap;gap:0.4rem;" id="admin-tag-picker">
+                 ${allTags.map(t => {
+                   const on  = playerTagIds.has(t.id)
+                   const hex = t.colour || '#6366f1'
+                   return `<div class="tag-pill clickable" id="admintagpick-${t.id}"
+                     onclick="adminTogglePlayerTag('${playerId}',${t.id},'${hex}')"
+                     style="background:${on ? hex+'22' : 'transparent'};
+                            border-color:${on ? hex : hex+'55'};
+                            color:${on ? hex : 'var(--grey-light)'};">
+                     <div class="tag-dot" style="background:${hex}"></div>${t.name}
+                   </div>`
+                 }).join('')}
+               </div>`
+          }
+        </div>
+      </div>`
+
+    overlay.addEventListener('click', e => { if(e.target===overlay) overlay.remove() })
+    document.body.appendChild(overlay)
+  }
+
+  async function adminTogglePlayerTag(playerId, tagId, hex) {
+    const el = document.getElementById('admintagpick-' + tagId)
+    const { data: existing } = await sb.from('profile_tags')
+      .select('tag_id').eq('profile_id', playerId).eq('tag_id', tagId)
+    
+    if (existing && existing.length > 0) {
+      await sb.from('profile_tags').delete().eq('profile_id', playerId).eq('tag_id', tagId)
+      if (el) { el.style.background='transparent'; el.style.borderColor=hex+'55'; el.style.color='var(--grey-light)' }
+    } else {
+      await sb.from('profile_tags').insert({ profile_id: playerId, tag_id: tagId })
+      if (el) { el.style.background=hex+'22'; el.style.borderColor=hex; el.style.color=hex }
+    }
+    await loadPlayerTags()
   }
 
   // ── AUDIT LOG ──
